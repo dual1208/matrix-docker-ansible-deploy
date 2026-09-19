@@ -1,0 +1,84 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+matrix_playbook_migration_validated_version: v2026.05.18.0
+matrix_domain: 8.163.2.191
+matrix_server_fqn_matrix: 8.163.2.191
+matrix_homeserver_implementation: synapse
+matrix_playbook_reverse_proxy_type: playbook-managed-traefik
+devture_systemd_docker_base_ipv6_enabled: false
+devture_timesync_installation_enabled: false
+docker_apt_gpg_key: /etc/apt/keyrings/imcalling-docker.asc
+
+# Small private two-phone deployment; keep the host's existing PostgreSQL intact.
+matrix_client_element_enabled: false
+matrix_element_call_enabled: false
+exim_relay_enabled: false
+coturn_enabled: false
+matrix_homeserver_federation_enabled: false
+matrix_synapse_workers_enabled: false
+matrix_synapse_report_stats: false
+matrix_synapse_event_cache_size: 10K
+matrix_synapse_caches_global_factor: 0.5
+matrix_synapse_cache_autotuning_max_cache_memory_usage: 67108864
+matrix_synapse_cache_autotuning_target_cache_memory_usage: 33554432
+postgres_shared_buffers: 65536
+postgres_max_connections: 50
+
+matrix_rtc_enabled: true
+matrix_authentication_service_enabled: true
+matrix_authentication_service_config_account_password_registration_enabled: false
+matrix_authentication_service_config_account_password_registration_email_required: false
+matrix_authentication_service_config_email_transport: blackhole
+matrix_authentication_service_config_clients_custom:
+  - client_id: 01M2VM6HEE7G54S8RFEJEFK7DT
+    client_auth_method: none
+    redirect_uris:
+      - com.dual1208.elementx:/oauth
+
+# gz has a private interface behind its public IP. Explicitly advertise the IP.
+livekit_server_config_rtc_use_external_ip: false
+livekit_server_config_rtc_node_ip: 8.163.2.191
+# TLS clients connecting to an IP may omit SNI; this is a dedicated TURN port.
+livekit_server_container_labels_turn_traefik_rule: HostSNI(`*`)
+
+# Existing acme.sh installation manages the shared IP certificate.
+traefik_config_certificatesResolvers_acme_enabled: false
+traefik_ssl_dir_enabled: true
+traefik_config_entrypoint_web_to_web_secure_redirection_enabled: false
+traefik_configuration_extension_yaml: |
+  providers:
+    file:
+      watch: true
+traefik_provider_configuration_extension_yaml: |
+  tls:
+    certificates:
+      - certFile: /ssl/fullchain.pem
+        keyFile: /ssl/privkey.pem
+    stores:
+      default:
+        defaultCertificate:
+          certFile: /ssl/fullchain.pem
+          keyFile: /ssl/privkey.pem
+  http:
+    routers:
+      acme-webroot:
+        rule: Host(`8.163.2.191`) && PathPrefix(`/.well-known/acme-challenge/`)
+        entryPoints: [web]
+        service: matrix-static-files@docker
+        priority: 1000
+      redirect-https:
+        rule: Host(`8.163.2.191`)
+        entryPoints: [web]
+        service: noop@internal
+        middlewares: [redirect-https]
+        priority: 1
+    middlewares:
+      redirect-https:
+        redirectScheme:
+          scheme: https
+          permanent: true
+
+matrix_static_files_container_labels_base_domain_enabled: true
+matrix_static_files_container_labels_base_domain_traefik_hostname: 8.163.2.191
+matrix_static_files_container_labels_base_domain_traefik_priority: 1

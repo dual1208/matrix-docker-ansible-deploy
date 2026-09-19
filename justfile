@@ -8,10 +8,30 @@
 mise_data_dir := env("MISE_DATA_DIR", justfile_directory() / "var/mise")
 mise_trusted_config_paths := justfile_directory() / "mise.toml"
 prek_home := env("PREK_HOME", justfile_directory() / "var/prek")
+gz_ansible := env("GZ_ANSIBLE", "ansible-playbook")
+gz_python := env("GZ_PYTHON", "python3")
 
 # Shows help
 default:
     @{{ just_executable() }} --list --justfile "{{ justfile() }}"
+
+# Validates the private gz deployment without changing its services.
+gz-check:
+    {{gz_ansible}} -i inventory/hosts setup.yml --syntax-check
+    {{gz_ansible}} -i inventory/hosts deployment/bootstrap.yml --syntax-check
+    {{gz_ansible}} -i inventory/hosts deployment/install-tls.yml --syntax-check
+    sh -n deployment/matrix-tls-sync.sh
+
+# Installs the configured gz stack using the existing private inventory.
+gz-deploy:
+    {{gz_ansible}} -i inventory/hosts deployment/bootstrap.yml
+    {{gz_ansible}} -i inventory/hosts setup.yml --tags=setup-all
+    {{gz_ansible}} -i inventory/hosts deployment/install-tls.yml
+    {{gz_ansible}} -i inventory/hosts setup.yml --tags=start,ensure-matrix-users-created
+
+# Checks public HTTPS, authentication, TURN, and RTC listeners.
+gz-verify:
+    {{gz_python}} deployment/verify.py
 
 # Adds a new host to the inventory, creating the inventory files if necessary (e.g. `just add-inventory-host example.com 1.2.3.4`)
 add-inventory-host domain server_address:

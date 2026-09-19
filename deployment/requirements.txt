@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+ansible==13.4.0
+ansible-core==2.20.9
+cffi==2.1.1
+cryptography==50.0.1
+jinja2==3.1.6
+markupsafe==3.0.3
+packaging==26.3
+pycparser==3.0
+pyyaml==6.0.3
+resolvelib==1.2.1

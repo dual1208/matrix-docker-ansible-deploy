@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+- name: Install the shared ACME certificate into Matrix
+  hosts: matrix_servers
+  become: true
+  tasks:
+    - name: Back up existing ACME domain configuration once
+      ansible.builtin.copy:
+        src: /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf
+        dest: /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf.before-matrix
+        remote_src: true
+        force: false
+        mode: '0600'
+      no_log: true
+    - name: Install certificate synchronization helper
+      ansible.builtin.copy:
+        src: matrix-tls-sync.sh
+        dest: /usr/local/sbin/matrix-tls-sync
+        owner: root
+        group: root
+        mode: '0755'
+    - name: Synchronize current certificate
+      ansible.builtin.command: /usr/local/sbin/matrix-tls-sync
+      changed_when: true
+    - name: Prepare the HTTP challenge directory
+      ansible.builtin.file:
+        path: /matrix/static-files/public/.well-known/acme-challenge
+        state: directory
+        owner: matrix
+        group: matrix
+        mode: '0755'
+    - name: Preserve certificate destinations and reload both HTTPS services
+      ansible.builtin.command:
+        argv:
+          - /root/.acme.sh/acme.sh
+          - --install-cert
+          - -d
+          - 8.163.2.191
+          - --ecc
+          - --key-file
+          - /etc/peacelove/tls/privkey.pem
+          - --fullchain-file
+          - /etc/peacelove/tls/fullchain.pem
+          - --reloadcmd
+          - /etc/peacelove/tls-reload.sh && /usr/local/sbin/matrix-tls-sync
+      changed_when: true
+      no_log: true

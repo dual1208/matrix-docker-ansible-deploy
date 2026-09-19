@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+- name: Prepare the existing gz host for the Matrix test deployment
+  hosts: matrix_servers
+  become: true
+  tasks:
+    - name: Verify the expected public host and existing certificate
+      ansible.builtin.assert:
+        that:
+          - ansible_host == '8.163.2.191'
+          - ansible_facts['distribution'] == 'Debian'
+    - name: Check the existing IP certificate remains valid
+      ansible.builtin.command: openssl x509 -in /etc/peacelove/tls/fullchain.pem -noout -checkend 86400
+      changed_when: false
+    - name: Install Docker's verified release signing key
+      ansible.builtin.copy:
+        src: docker-release.asc
+        dest: /etc/apt/keyrings/imcalling-docker.asc
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Inspect Matrix swap file
+      ansible.builtin.stat:
+        path: /var/swap.matrix
+      register: matrix_swap_file
+    - name: Create dedicated two GiB swap file
+      when: not matrix_swap_file.stat.exists
+      block:
+        - name: Allocate Matrix swap file
+          ansible.builtin.command: fallocate -l 2G /var/swap.matrix
+          changed_when: true
+        - name: Restrict swap file permissions
+          ansible.builtin.file:
+            path: /var/swap.matrix
+            mode: '0600'
+        - name: Initialize swap file
+          ansible.builtin.command: mkswap /var/swap.matrix
+          changed_when: true
+    - name: Keep Matrix swap enabled after reboot
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: /var/swap.matrix none swap sw 0 0
+        backup: true
+    - name: Read active swap files
+      ansible.builtin.command: swapon --show=NAME --noheadings
+      register: matrix_active_swap
+      changed_when: false
+    - name: Enable Matrix swap
+      ansible.builtin.command: swapon /var/swap.matrix
+      when: "'/var/swap.matrix' not in matrix_active_swap.stdout_lines"
+      changed_when: true

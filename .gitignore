@@ -5,6 +5,7 @@
 .idea/
 .direnv/
 /var/
+/deployment/__pycache__/
 
 # ignore roles pulled by ansible-galaxy
 /roles/galaxy/*
