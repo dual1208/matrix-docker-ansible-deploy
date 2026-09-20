@@ -39,7 +39,7 @@ Repository entry points are `just gz-check`, `just gz-deploy`, and `just gz-veri
 
 The managed family conversation is room `!zeH0LfJ1UQUIIR1Zm0or2b843_84zsDIYH4qxw-kDew`. It is named `Family`, owned by `api30`, and has exactly the provisioned `api30` and `tcnowifi` accounts as joined members. The room was created empty with end-to-end encryption, shared history visibility, forbidden guest access, invite-only membership, private directory visibility, and federation disabled in the room creation event.
 
-Run `just gz-family-room` to check these invariants and repair a missing membership. The provisioner obtains working access through unique temporary MAS compatibility sessions, performs ordinary Matrix client operations, logs out those sessions immediately, and confirms that their tokens no longer authenticate. Compatibility sessions do not currently have a configured automatic lifetime, so successful logout verification is mandatory. It does not read or change either account password, and it does not touch existing phone sessions or encryption recovery data. A mismatch in an immutable or security-sensitive room property fails instead of silently replacing the room.
+Run `just gz-family-room` to check these invariants and repair a missing membership only while the entire room timeline is still empty. The provisioner verifies security-sensitive room state before any membership change. Once messages exist, it fails with instructions to invite from a trusted history-holding client and let the managed client accept the invitation. It obtains working access through unique temporary MAS compatibility sessions, performs ordinary Matrix client operations, logs out those sessions immediately, and confirms that their tokens no longer authenticate. Compatibility sessions do not currently have a configured automatic lifetime, so successful logout verification is mandatory. It does not read or change either account password, and it does not touch existing phone sessions or encryption recovery data. A mismatch in an immutable or security-sensitive room property fails instead of silently replacing the room.
 
 Room membership does not provide encryption history by itself. Because this room is empty at provisioning time, both accounts can establish encryption on their actual phones before any family messages are sent. Do not claim that old history is recoverable until each account's client-side recovery and key backup have been exercised with the original phone unavailable.
 
@@ -53,6 +53,8 @@ ansible-playbook -i inventory/hosts deployment/provision-family-room.yml \
 ```
 
 Record the returned room ID in a private review-specific vars file before repeating the command. Use unique reviewer credentials, share them only through App Store Connect, and remove or lock the reviewer account after review. This path creates neither an enrollment service nor server-side recovery-secret escrow, and it grants no access to the real Family room.
+
+The current mobile builds embed the real Family room ID globally, so provisioning this separate room alone does not yet produce a usable App Review login. Before submitting reviewer credentials, the same final binary and feature set must support safe per-account assigned-room routing, or another owner-approved isolation design must be in place. Do not submit real family credentials, add a reviewer to the Family room, or use a review-only binary with different behavior.
 
 ### Current push status
 

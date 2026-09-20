@@ -136,13 +136,11 @@ class Provisioner:
         return matches[0] if matches else ""
 
     def create_room(self) -> str:
-        invitees = [self.mxid(member) for member in self.members if member != self.owner]
         body = {
             "name": self.name,
             "preset": "private_chat",
             "visibility": "private",
             "is_direct": False,
-            "invite": invitees,
             "creation_content": {"m.federate": False},
             "initial_state": [
                 {
@@ -173,30 +171,7 @@ class Provisioner:
             raise ProvisionError("Room creation returned no room ID")
         return room_id
 
-    def ensure_membership(self, room_id: str) -> bool:
-        changed = False
-        encoded = self.encoded_room_id(room_id)
-        state = self.state_map(self.room_state(self.owner, room_id))
-        for member in self.members:
-            if member == self.owner:
-                continue
-            mxid = self.mxid(member)
-            membership = state.get(("m.room.member", mxid), {}).get("content", {}).get("membership")
-            if membership == "join":
-                continue
-            if membership != "invite":
-                self.request(
-                    self.owner,
-                    "POST",
-                    f"/_matrix/client/v3/rooms/{encoded}/invite",
-                    {"user_id": mxid},
-                )
-                changed = True
-            self.request(member, "POST", f"/_matrix/client/v3/join/{encoded}", {})
-            changed = True
-        return changed
-
-    def verify_room(self, room_id: str, *, require_empty: bool = False) -> dict[str, bool]:
+    def inspect_room(self, room_id: str) -> tuple[dict[str, bool], list[str]]:
         state = self.state_map(self.room_state(self.owner, room_id))
         content = lambda event_type: state.get((event_type, ""), {}).get("content", {})
         memberships = {
@@ -227,24 +202,69 @@ class Provisioner:
             == "forbidden",
             "invite_only": content("m.room.join_rules").get("join_rule") == "invite",
             "private_directory": visibility == "private",
-            "expected_members_joined": all(
-                memberships.get(mxid) == "join" for mxid in expected_members
-            ),
-            "only_expected_members": active_members == expected_members,
+            "owner_joined": memberships.get(self.mxid(self.owner)) == "join",
+            "no_unexpected_active_members": active_members <= expected_members,
         }
-        if require_empty:
-            messages = self.request(
-                self.owner,
-                "GET",
-                f"/_matrix/client/v3/rooms/{encoded}/messages?dir=b&limit=20",
-            )[1].get("chunk", [])
-            checks["no_messages"] = not any(
-                event.get("type") in {"m.room.message", "m.room.encrypted"} for event in messages
-            )
         failed = [name for name, passed in checks.items() if not passed]
         if failed:
-            raise ProvisionError("Room verification failed: " + ", ".join(failed))
-        return checks
+            raise ProvisionError("Room verification failed before membership changes: " + ", ".join(failed))
+        missing_members = [
+            member
+            for member in self.members
+            if memberships.get(self.mxid(member)) != "join"
+        ]
+        return checks, missing_members
+
+    def room_has_messages(self, room_id: str) -> bool:
+        encoded = self.encoded_room_id(room_id)
+        event_filter = json.dumps(
+            {"types": ["m.room.message", "m.room.encrypted"]},
+            separators=(",", ":"),
+        )
+        from_token = ""
+        seen_tokens: set[str] = set()
+        while True:
+            query = {"dir": "b", "limit": "1", "filter": event_filter}
+            if from_token:
+                query["from"] = from_token
+            document = self.request(
+                self.owner,
+                "GET",
+                f"/_matrix/client/v3/rooms/{encoded}/messages?{urllib.parse.urlencode(query)}",
+            )[1]
+            if any(
+                event.get("type") in {"m.room.message", "m.room.encrypted"}
+                for event in document.get("chunk", [])
+            ):
+                return True
+            end_token = document.get("end", "")
+            if not end_token or end_token == from_token:
+                return False
+            if end_token in seen_tokens:
+                raise ProvisionError("Room message pagination did not terminate")
+            seen_tokens.add(end_token)
+            from_token = end_token
+
+    def ensure_membership(self, room_id: str, missing_members: list[str]) -> bool:
+        changed = False
+        encoded = self.encoded_room_id(room_id)
+        state = self.state_map(self.room_state(self.owner, room_id))
+        for member in missing_members:
+            mxid = self.mxid(member)
+            membership = state.get(("m.room.member", mxid), {}).get("content", {}).get("membership")
+            if membership == "join":
+                continue
+            if membership != "invite":
+                self.request(
+                    self.owner,
+                    "POST",
+                    f"/_matrix/client/v3/rooms/{encoded}/invite",
+                    {"user_id": mxid},
+                )
+                changed = True
+            self.request(member, "POST", f"/_matrix/client/v3/join/{encoded}", {})
+            changed = True
+        return changed
 
     def revoke_sessions(self) -> list[str]:
         failures = []
@@ -283,11 +303,28 @@ class Provisioner:
         elif self.expected_room_id and room_id != self.expected_room_id:
             raise ProvisionError("Discovered room does not match the configured room ID")
 
-        membership_changed = self.ensure_membership(room_id)
+        checks, missing_members = self.inspect_room(room_id)
+        was_empty_before_membership = None
+        if created or missing_members:
+            was_empty_before_membership = not self.room_has_messages(room_id)
+        if missing_members and not was_empty_before_membership:
+            raise ProvisionError(
+                "Room contains message history; invite from a trusted history-holding client "
+                "and let the managed client accept the invitation"
+            )
+
+        membership_changed = self.ensure_membership(room_id, missing_members)
         if membership_changed and action == "verified":
             action = "membership-repaired"
         changed = changed or membership_changed
-        checks = self.verify_room(room_id, require_empty=created)
+        checks, remaining_members = self.inspect_room(room_id)
+        checks["expected_members_joined"] = not remaining_members
+        checks["only_expected_members"] = checks.pop("no_unexpected_active_members")
+        if created:
+            checks["no_messages_at_creation"] = was_empty_before_membership is True
+        failed = [name for name, passed in checks.items() if not passed]
+        if failed:
+            raise ProvisionError("Room verification failed: " + ", ".join(failed))
         return {"action": action, "changed": changed, "checks": checks, "room_id": room_id}
 
 

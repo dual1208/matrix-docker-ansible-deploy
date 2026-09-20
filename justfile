@@ -21,6 +21,7 @@ gz-check:
     {{gz_ansible}} -i inventory/hosts deployment/bootstrap.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/install-tls.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/provision-family-room.yml --syntax-check
+    {{gz_python}} -m unittest deployment/test_provision_room.py
     sh -n deployment/matrix-tls-sync.sh
 
 # Installs the configured gz stack using the existing private inventory.
