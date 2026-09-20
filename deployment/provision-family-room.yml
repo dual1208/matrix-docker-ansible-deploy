@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+- name: Provision the private encrypted family room
+  hosts: matrix_servers
+  become: true
+  gather_facts: false
+  vars_files:
+    - family-room.yml
+  tasks:
+    - name: Validate family room inputs
+      ansible.builtin.assert:
+        that:
+          - gz_family_room_id is string
+          - gz_family_room_name | length > 0
+          - gz_family_room_owner_localpart | length > 0
+          - gz_family_room_owner_localpart in gz_family_room_member_localparts
+          - gz_family_room_member_localparts | length > 0
+          - >-
+            gz_family_room_member_localparts | unique | length
+            == gz_family_room_member_localparts | length
+
+    - name: Provision and verify the family room with temporary sessions
+      block:
+        - name: Create a temporary provisioning script path
+          ansible.builtin.tempfile:
+            state: file
+            suffix: -provision-room.py
+          register: gz_family_room_script
+
+        - name: Upload the room provisioner
+          ansible.builtin.copy:
+            src: provision-room.py
+            dest: "{{ gz_family_room_script.path }}"
+            mode: "0700"
+
+        - name: Run the idempotent room provisioner
+          ansible.builtin.command:
+            argv:
+              - python3
+              - "{{ gz_family_room_script.path }}"
+              - --homeserver-url
+              - "https://{{ matrix_server_fqn_matrix }}"
+              - --domain
+              - "{{ matrix_domain }}"
+              - --name
+              - "{{ gz_family_room_name }}"
+              - --owner
+              - "{{ gz_family_room_owner_localpart }}"
+              - --members
+              - "{{ gz_family_room_member_localparts | join(',') }}"
+              - --room-id
+              - "{{ gz_family_room_id }}"
+          register: gz_family_room_provision
+          changed_when: (gz_family_room_provision.stdout | from_json).get('changed', false)
+
+        - name: Validate the provisioned room ID
+          vars:
+            gz_family_room_result: "{{ gz_family_room_provision.stdout | from_json }}"
+          ansible.builtin.assert:
+            that:
+              - >-
+                gz_family_room_id | length == 0
+                or gz_family_room_result.room_id == gz_family_room_id
+              - >-
+                gz_family_room_result.checks | dict2items
+                | map(attribute='value') | unique | list == [true]
+
+        - name: Report the public room ID
+          ansible.builtin.debug:
+            msg: "Room ready: {{ (gz_family_room_provision.stdout | from_json).room_id }}"
+      always:
+        - name: Remove the temporary provisioning script
+          ansible.builtin.file:
+            path: "{{ gz_family_room_script.path | default('') }}"
+            state: absent
+          when: gz_family_room_script.path | default('') | length > 0

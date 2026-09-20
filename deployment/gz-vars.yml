@@ -18,6 +18,8 @@ coturn_enabled: false
 matrix_homeserver_federation_enabled: false
 matrix_synapse_workers_enabled: false
 matrix_synapse_report_stats: false
+matrix_synapse_enable_registration: false
+matrix_synapse_allow_guest_access: false
 matrix_synapse_event_cache_size: 10K
 matrix_synapse_caches_global_factor: 0.5
 matrix_synapse_cache_autotuning_max_cache_memory_usage: 67108864

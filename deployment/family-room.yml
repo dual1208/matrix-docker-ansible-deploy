@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+gz_family_room_id: "!zeH0LfJ1UQUIIR1Zm0or2b843_84zsDIYH4qxw-kDew"
+gz_family_room_name: Family
+gz_family_room_owner_localpart: api30
+gz_family_room_member_localparts:
+  - api30
+  - tcnowifi

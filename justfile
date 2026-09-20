@@ -20,6 +20,7 @@ gz-check:
     {{gz_ansible}} -i inventory/hosts setup.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/bootstrap.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/install-tls.yml --syntax-check
+    {{gz_ansible}} -i inventory/hosts deployment/provision-family-room.yml --syntax-check
     sh -n deployment/matrix-tls-sync.sh
 
 # Installs the configured gz stack using the existing private inventory.
@@ -32,6 +33,10 @@ gz-deploy:
 # Checks public HTTPS, authentication, TURN, and RTC listeners.
 gz-verify:
     {{gz_python}} deployment/verify.py
+
+# Idempotently provisions and verifies the private encrypted Family room.
+gz-family-room:
+    {{gz_ansible}} -i inventory/hosts deployment/provision-family-room.yml
 
 # Adds a new host to the inventory, creating the inventory files if necessary (e.g. `just add-inventory-host example.com 1.2.3.4`)
 add-inventory-host domain server_address:
