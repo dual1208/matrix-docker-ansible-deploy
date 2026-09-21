@@ -54,17 +54,31 @@
           - /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf
       changed_when: false
       no_log: true
-    - name: Read root cron privately
-      ansible.builtin.command: /usr/bin/crontab -l
-      register: gz_root_cron
+    - name: Require the cron scheduler to be active
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/systemctl
+          - is-active
+          - --quiet
+          - cron.service
       changed_when: false
-      no_log: true
-    - name: Require the acme.sh renewal cron
-      ansible.builtin.assert:
-        that:
-          - "'acme.sh' in gz_root_cron.stdout"
-          - "'--cron' in gz_root_cron.stdout"
-        fail_msg: The root acme.sh renewal cron is missing.
+    - name: Require the cron scheduler to be enabled
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/systemctl
+          - is-enabled
+          - --quiet
+          - cron.service
+      changed_when: false
+    - name: Require an enabled acme.sh renewal cron entry
+      ansible.builtin.shell: >-
+        set -o pipefail;
+        /usr/bin/crontab -l 2>/dev/null
+        | /usr/bin/grep -Eq
+        '^[[:space:]]*[^#[:space:]][^#]*acme\.sh[^#]*--cron([[:space:]]|$)'
+      args:
+        executable: /bin/bash
+      changed_when: false
       no_log: true
     - name: Require at least one day of certificate validity
       ansible.builtin.command:
