@@ -150,6 +150,12 @@ class Provisioner:
             "visibility": "private",
             "is_direct": False,
             "creation_content": {"m.federate": False},
+            "power_level_content_override": {
+                "events": {
+                    "m.call.member": 0,
+                    "org.matrix.msc3401.call.member": 0,
+                }
+            },
             "initial_state": [
                 {
                     "type": "m.room.history_visibility",
