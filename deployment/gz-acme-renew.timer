@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[Unit]
+Description=Check gz short-lived IP certificate renewal every six hours
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:35:00
+Persistent=true
+AccuracySec=1min
+Unit=gz-acme-renew.service
+
+[Install]
+WantedBy=timers.target

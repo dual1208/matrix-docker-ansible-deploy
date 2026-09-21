@@ -81,3 +81,46 @@
           - /etc/peacelove/tls-reload.sh && /usr/local/sbin/matrix-tls-sync
       changed_when: true
       no_log: true
+    - name: Install the locked ACME renewal helper
+      ansible.builtin.copy:
+        src: gz-acme-renew.sh
+        dest: /usr/local/sbin/gz-acme-renew
+        owner: root
+        group: root
+        mode: '0755'
+    - name: Remove the legacy direct acme.sh cron entry
+      ansible.builtin.lineinfile:
+        path: /var/spool/cron/crontabs/root
+        regexp: '^[ \t]*[^# \t].*acme\.sh.*--cron.*$'
+        state: absent
+        owner: root
+        group: crontab
+        mode: '0600'
+      no_log: true
+    - name: Install the locked cron fallback
+      ansible.builtin.cron:
+        name: gz locked ACME renewal
+        user: root
+        minute: '30'
+        hour: 0,6,12,18
+        job: /usr/local/sbin/gz-acme-renew >/dev/null 2>&1
+    - name: Install the ACME renewal systemd units
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "/etc/systemd/system/{{ item }}"
+        owner: root
+        group: root
+        mode: '0644'
+      loop:
+        - gz-acme-renew.service
+        - gz-acme-renew.timer
+    - name: Enable the ACME renewal timer
+      ansible.builtin.systemd_service:
+        name: gz-acme-renew.timer
+        enabled: true
+        state: started
+        daemon_reload: true
+    - name: Run the locked renewal health check once
+      ansible.builtin.systemd_service:
+        name: gz-acme-renew.service
+        state: started

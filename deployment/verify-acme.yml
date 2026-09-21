@@ -70,16 +70,70 @@
           - --quiet
           - cron.service
       changed_when: false
-    - name: Require an enabled acme.sh renewal cron entry
+    - name: Require the cron fallback to use the locked helper
       ansible.builtin.shell: >-
         set -o pipefail;
         /usr/bin/crontab -l 2>/dev/null
+        | /usr/bin/grep -Eq
+        '^[[:space:]]*[^#[:space:]][^#]*/usr/local/sbin/gz-acme-renew([[:space:]]|$)'
+      args:
+        executable: /bin/bash
+      changed_when: false
+      no_log: true
+    - name: Reject an enabled direct acme.sh cron entry
+      ansible.builtin.shell: >-
+        ! /usr/bin/crontab -l 2>/dev/null
         | /usr/bin/grep -Eq
         '^[[:space:]]*[^#[:space:]][^#]*acme\.sh[^#]*--cron([[:space:]]|$)'
       args:
         executable: /bin/bash
       changed_when: false
       no_log: true
+    - name: Require the ACME timer to be active
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/systemctl
+          - is-active
+          - --quiet
+          - gz-acme-renew.timer
+      changed_when: false
+    - name: Require the ACME timer to be enabled
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/systemctl
+          - is-enabled
+          - --quiet
+          - gz-acme-renew.timer
+      changed_when: false
+    - name: Require the latest ACME service result to be successful
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/systemctl
+          - show
+          - --property=Result
+          - --value
+          - gz-acme-renew.service
+      register: gz_acme_service_result
+      changed_when: false
+      failed_when: gz_acme_service_result.stdout | trim != 'success'
+    - name: Require the latest renewal check to have succeeded
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/grep
+          - -Fx
+          - result=ok
+          - /var/lib/gz-acme-renew/status
+      changed_when: false
+    - name: Inspect renewal status freshness
+      ansible.builtin.stat:
+        path: /var/lib/gz-acme-renew/status
+      register: gz_acme_status
+    - name: Require renewal status from the last seven hours
+      ansible.builtin.assert:
+        that:
+          - gz_acme_status.stat.exists
+          - (ansible_date_time.epoch | int) - (gz_acme_status.stat.mtime | int) < 25200
+        fail_msg: The locked ACME renewal status is missing or stale.
     - name: Require at least one day of certificate validity
       ansible.builtin.command:
         argv:

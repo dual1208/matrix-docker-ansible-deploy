@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[Unit]
+Description=Renew and verify the gz short-lived IP certificate
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/gz-acme-renew
+TimeoutStartSec=20min
+UMask=0077

@@ -27,6 +27,7 @@ gz-check:
     {{gz_ansible}} -i inventory/hosts deployment/install-push-credentials.yml --syntax-check
     {{gz_python}} -m unittest deployment/test_provision_room.py
     sh -n deployment/matrix-tls-sync.sh
+    bash -n deployment/gz-acme-renew.sh
 
 # Installs the configured gz stack using the existing private inventory.
 gz-deploy:
