@@ -97,7 +97,7 @@ def prepare(root: Path) -> tuple[Path, Path, Path]:
     except KeyError:
         pass
     else:
-        os.chown(data, 0, matrix.pw_gid)
+        os.chown(data, matrix.pw_uid, matrix.pw_gid)
         os.chown(database, matrix.pw_uid, matrix.pw_gid)
     return pki, exports, database
 
@@ -305,9 +305,7 @@ def issue(
     }
 
 
-def main() -> None:
-    os.umask(0o077)
-    args = arguments()
+def execute(args: argparse.Namespace) -> None:
     root = Path(args.root)
     pki, exports, database = prepare(root)
     if args.command == "init-ca":
@@ -346,6 +344,18 @@ def main() -> None:
             ).fetchall()
         result = {"releases": [dict(zip(("fingerprint_sha256", "serial_hex", "platform", "release_id", "enabled", "not_after"), row, strict=True)) for row in rows]}
     print(json.dumps(result, sort_keys=True))
+
+
+def main() -> None:
+    os.umask(0o077)
+    args = arguments()
+    root = Path(args.root)
+    root.mkdir(parents=True, exist_ok=True)
+    root.chmod(0o700)
+    with (root / ".admin.lock").open("a") as lock:
+        os.fchmod(lock.fileno(), 0o600)
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        execute(args)
 
 
 if __name__ == "__main__":
