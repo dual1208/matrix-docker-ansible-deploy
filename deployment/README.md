@@ -47,6 +47,19 @@ All three have shared history, forbidden guest access, invite-only membership, p
 
 Run `just gz-family-room` to verify and repair these rooms. The provisioner checks every security invariant before membership changes, never sends a message, uses temporary MAS compatibility sessions for ordinary Matrix client operations, logs out each session, and confirms its token no longer authenticates. It assigns each member a room through global account data type `io.familychat.assigned_room` with content `{"room_id": "!opaqueRoomId"}`. Both native clients read this mapping after sync and fail closed when it is absent or malformed; no room ID belongs in the binary.
 
+Run `just gz-call-power-levels` to allow ordinary members to publish the two
+MatrixRTC membership state event types required by current and legacy clients.
+The repair adds only `m.call.member: 0` and
+`org.matrix.msc3401.call.member: 0` to each room's existing `events` power-level
+map. It preserves the administrator, default state, invitation, moderation,
+notification, and all unrelated event levels. Before its first repair it uses
+the ordinary `tcnowifi` member, rather than the `api30` room owner, to prove the
+existing `403 M_FORBIDDEN` in the isolated development room; afterward it
+proves the same empty self-membership event succeeds there. Maintenance
+sessions are issued without passwords, revoked immediately, and checked for a
+`401` response after logout. The probe never joins a new user or sends a room
+message.
+
 The real family accounts must never be logged into development phones or used for test messages. Development accounts have no membership in `家庭群`, and the App Review account has membership only in `审核演示群`. Reviewer credentials remain in the ignored mode-0600 inventory and may be shared only through App Store Connect after the owner approves them.
 
 ## Public support pages and hosted UI

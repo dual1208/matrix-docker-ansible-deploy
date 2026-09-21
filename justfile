@@ -22,6 +22,7 @@ gz-check:
     {{gz_ansible}} -i inventory/hosts deployment/install-tls.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/verify-acme.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/provision-family-room.yml --syntax-check
+    {{gz_ansible}} -i inventory/hosts deployment/repair-call-power-levels.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/publish-family-public.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/publish-mas-branding.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/install-push-credentials.yml --syntax-check
@@ -48,6 +49,10 @@ gz-acme-verify:
 # Idempotently provisions and verifies the isolated private unencrypted rooms.
 gz-family-room:
     {{gz_ansible}} -i inventory/hosts deployment/provision-family-room.yml
+
+# Allows ordinary managed-room members to publish MatrixRTC membership state.
+gz-call-power-levels:
+    {{gz_ansible}} -i inventory/hosts deployment/repair-call-power-levels.yml
 
 gz-family-public:
     {{gz_ansible}} -i inventory/hosts deployment/publish-family-public.yml
