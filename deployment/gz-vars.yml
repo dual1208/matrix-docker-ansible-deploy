@@ -56,6 +56,11 @@ matrix_authentication_service_config_clients_custom:
     redirect_uris:
       - com.dual1208.elementx:/oauth
 
+# Native release identities are staged separately. Keep both flags false until
+# the matching APK and IPA have passed physical-device login verification.
+gz_client_auth_gateway_enabled: false
+gz_client_auth_enforcement_enabled: false
+
 # gz has a private interface behind its public IP. Explicitly advertise the IP.
 livekit_server_config_rtc_use_external_ip: false
 livekit_server_config_rtc_node_ip: 8.163.2.191
@@ -71,6 +76,13 @@ traefik_configuration_extension_yaml: |
   providers:
     file:
       watch: true
+  entryPoints:
+    web-secure:
+      http:
+        aliasHeadersStrategy: reject
+    matrix-federation:
+      http:
+        aliasHeadersStrategy: reject
 traefik_provider_configuration_extension_yaml: |
   tls:
     certificates:
@@ -81,6 +93,14 @@ traefik_provider_configuration_extension_yaml: |
         defaultCertificate:
           certFile: /ssl/fullchain.pem
           keyFile: /ssl/privkey.pem
+  {% if gz_client_auth_gateway_enabled | default(false) | bool %}
+    options:
+      default:
+        clientAuth:
+          caFiles:
+            - /ssl/client-ca.pem
+          clientAuthType: VerifyClientCertIfGiven
+  {% endif %}
 
 matrix_static_files_container_labels_base_domain_enabled: true
 matrix_static_files_container_labels_base_domain_traefik_hostname: 8.163.2.191

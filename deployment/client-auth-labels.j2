@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+traefik.enable=true
+traefik.docker.network=traefik
+traefik.http.services.matrix-client-auth.loadbalancer.server.port=8080
+traefik.http.middlewares.matrix-client-auth-strip.headers.customrequestheaders.X-Forwarded-Tls-Client-Cert=
+traefik.http.middlewares.matrix-client-auth-strip.headers.customrequestheaders.X-Forwarded-Tls-Client-Cert-Info=
+traefik.http.middlewares.matrix-client-auth-pass.passtlsclientcert.pem=true
+traefik.http.routers.matrix-client-auth.rule=Host(`{{ matrix_server_fqn_matrix }}`) && Path(`/client-auth/login`)
+traefik.http.routers.matrix-client-auth.entrypoints=web-secure
+traefik.http.routers.matrix-client-auth.tls=true
+traefik.http.routers.matrix-client-auth.priority=2000
+traefik.http.routers.matrix-client-auth.middlewares=matrix-client-auth-strip,matrix-client-auth-pass
+traefik.http.routers.matrix-client-auth.service=matrix-client-auth
+{% if gz_client_auth_enforcement_enabled | bool %}
+traefik.http.routers.matrix-client-auth-block-login.rule=PathRegexp(`^/_matrix/client/[^/]+/login(/.*)?$`)
+traefik.http.routers.matrix-client-auth-block-login.entrypoints=web-secure,matrix-federation
+traefik.http.routers.matrix-client-auth-block-login.tls=true
+traefik.http.routers.matrix-client-auth-block-login.priority=2100
+traefik.http.routers.matrix-client-auth-block-login.service=matrix-client-auth
+traefik.http.routers.matrix-client-auth-block-oauth.rule=Path(`/auth`) || PathPrefix(`/auth/`)
+traefik.http.routers.matrix-client-auth-block-oauth.entrypoints=web-secure,matrix-federation
+traefik.http.routers.matrix-client-auth-block-oauth.tls=true
+traefik.http.routers.matrix-client-auth-block-oauth.priority=2100
+traefik.http.routers.matrix-client-auth-block-oauth.service=matrix-client-auth
+traefik.http.routers.matrix-client-auth-readonly-oidc.rule=Host(`{{ matrix_server_fqn_matrix }}`) && Method(`GET`,`HEAD`) && (Path(`/auth/.well-known/openid-configuration`) || Path(`/auth/oauth2/keys.json`))
+traefik.http.routers.matrix-client-auth-readonly-oidc.entrypoints=web-secure
+traefik.http.routers.matrix-client-auth-readonly-oidc.tls=true
+traefik.http.routers.matrix-client-auth-readonly-oidc.priority=2200
+traefik.http.routers.matrix-client-auth-readonly-oidc.service=matrix-authentication-service@docker
+{% endif %}

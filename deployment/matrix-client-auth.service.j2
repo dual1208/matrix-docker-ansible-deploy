@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[Unit]
+Description=Family release client authentication gateway
+Requires=docker.service
+After=docker.service matrix-authentication-service.service matrix-traefik.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+ExecStartPre=-/usr/bin/docker stop -t 10 matrix-client-auth
+ExecStartPre=-/usr/bin/docker rm matrix-client-auth
+ExecStartPre=/usr/bin/docker create --name=matrix-client-auth --read-only --cap-drop=ALL --security-opt=no-new-privileges:true --user={{ gz_matrix_uid }}:{{ gz_matrix_gid }} --network=matrix-homeserver --label-file=/matrix/client-auth/config/labels --mount=type=bind,src=/matrix/client-auth/config/client-auth-gateway.py,dst=/app/client-auth-gateway.py,ro --mount=type=bind,src=/matrix/client-auth/data,dst=/data --entrypoint=/usr/local/bin/python {{ gz_client_auth_container_image }} /app/client-auth-gateway.py
+ExecStartPre=/usr/bin/docker network connect traefik matrix-client-auth
+ExecStart=/usr/bin/docker start --attach matrix-client-auth
+ExecStop=-/usr/bin/docker stop -t 10 matrix-client-auth
+ExecStopPost=-/usr/bin/docker rm matrix-client-auth
+
+[Install]
+WantedBy=multi-user.target

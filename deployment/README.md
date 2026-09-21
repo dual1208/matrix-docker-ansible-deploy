@@ -21,6 +21,50 @@ Run `deployment/install-tls.yml` again to install the issued certificate and ret
 
 The iOS fork uses the static public MAS client `01M2VM6HEE7G54S8RFEJEFK7DT` with issuer `https://8.163.2.191/auth/` and redirect `com.dual1208.elementx:/oauth`. It needs no client secret or public DNS domain.
 
+## Release-certificate native login
+
+The managed clients use `POST /client-auth/login` as their only new-login
+surface. The request has exactly `username`, `password`, and
+`initial_device_display_name`; `username` is a bare localpart. The gateway
+constructs a fixed `m.login.password` request with `refresh_token: false` and
+returns exactly `access_token`, `user_id`, and Matrix `device_id`. It never logs
+the body or response. Missing, expired, disabled, or revoked release
+certificates receive `403 M_RELEASE_NOT_ALLOWED`; malformed input receives
+`400 M_BAD_JSON`; MAS credential failures retain `403 M_FORBIDDEN`; unavailable
+MAS receives `503 M_UNAVAILABLE`.
+
+Each APK or IPA release has a distinct P-256 client certificate and private key
+shared by the trusted recipients of that artifact. This is an artifact
+distribution boundary, not a device identity: extracting one release key lets
+an attacker impersonate that release until its fingerprint is revoked. Private
+keys are never committed. The gz-only CA lives under
+`/matrix/client-auth/pki`; exports live under
+`/matrix/client-auth/exports/<release-id>` until copied through SSH to the
+ignored local directory `.artifacts/client-credentials`. Directories are mode
+0700 and keys/bundles are mode 0600. `client-auth-admin issue` exports
+`family-client.p12` with an empty password and legacy 3DES PKCS#12 encryption
+for Apple Security compatibility. Revocation disables its full certificate
+SHA-256 fingerprint in the SQLite allowlist; it never re-enables an old release
+ID.
+
+Traefik's shared default TLS option uses `VerifyClientCertIfGiven`, because TLS
+options are selected from Host/SNI before path routing. Clients without a
+certificate can still use normal Matrix and RTC bearer APIs. The login router
+first removes both forwarded-client-certificate headers, then injects the leaf
+certificate accepted by Traefik. The entry points reject aliased header names,
+and the gateway container has no published port. Keep
+`gz_client_auth_gateway_enabled` and `gz_client_auth_enforcement_enabled` false
+until both physical-device clients pass native login. To stage, first set only
+the gateway flag persistently in the ignored mode-0600 file
+`inventory/host_vars/gz/zz-client-auth.yml`; a command-line extra variable is
+not durable. Run `just gz-client-auth-ca` before `just gz-deploy` so the public
+CA exists before Traefik loads `VerifyClientCertIfGiven`, then run
+`just gz-client-auth-install`. After both clients pass, persist enforcement as
+true in the same host-vars file and rerun only the install recipe. Future normal
+deployments then retain both settings. Enforcement denies direct Matrix login
+on both 443 and 8448 and denies every `/auth` route except read-only GET/HEAD
+discovery and JWKS. Existing bearer tokens are not revoked.
+
 Docker Hub's direct route from this host timed out during initial installation. Image pulls can temporarily use a reverse SOCKS tunnel through the Mac:
 
 ```sh

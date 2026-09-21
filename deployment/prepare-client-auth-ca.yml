@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+- name: Prepare Traefik to verify release client certificates
+  hosts: matrix_servers
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Require the gz-only client CA certificate
+      ansible.builtin.stat:
+        path: /matrix/client-auth/pki/ca.pem
+      register: gz_client_auth_ca
+
+    - name: Refuse missing client CA state
+      ansible.builtin.assert:
+        that:
+          - gz_client_auth_ca.stat.isreg | default(false)
+
+    - name: Install only the public client CA for Traefik
+      ansible.builtin.copy:
+        src: /matrix/client-auth/pki/ca.pem
+        remote_src: true
+        dest: /matrix/traefik/ssl/client-ca.pem
+        owner: root
+        group: root
+        mode: "0644"

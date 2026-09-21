@@ -1,0 +1,142 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+- name: Stage the release client authentication gateway
+  hosts: matrix_servers
+  become: true
+  gather_facts: false
+  vars:
+    gz_client_auth_container_image: ghcr.io/element-hq/synapse:v1.160.0
+  tasks:
+    - name: Require explicit gateway staging
+      ansible.builtin.assert:
+        that:
+          - gz_client_auth_gateway_enabled | default(false) | bool
+          - not (gz_client_auth_enforcement_enabled | default(false) | bool) or
+            (gz_client_auth_gateway_enabled | bool)
+        fail_msg: >-
+          Enable the gateway only after release certificates exist; enable
+          enforcement only after both physical-device clients pass native login.
+
+    - name: Read the matrix service account
+      ansible.builtin.getent:
+        database: passwd
+        key: matrix
+
+    - name: Set the matrix service numeric identity
+      ansible.builtin.set_fact:
+        gz_matrix_uid: "{{ ansible_facts.getent_passwd.matrix[1] }}"
+        gz_matrix_gid: "{{ ansible_facts.getent_passwd.matrix[2] }}"
+
+    - name: Require the client CA and release allowlist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /matrix/client-auth/pki/ca.pem
+        - /matrix/client-auth/data/client-auth.sqlite3
+      register: gz_client_auth_inputs
+
+    - name: Refuse incomplete client-auth state
+      ansible.builtin.assert:
+        that:
+          - gz_client_auth_inputs.results | map(attribute='stat.exists') | min
+
+    - name: Create gateway configuration and data directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - {path: /matrix/client-auth/config, owner: root, group: root, mode: "0755"}
+        - {path: /matrix/client-auth/data, owner: matrix, group: matrix, mode: "0750"}
+
+    - name: Install the native login gateway
+      ansible.builtin.copy:
+        src: client-auth-gateway.py
+        dest: /matrix/client-auth/config/client-auth-gateway.py
+        owner: root
+        group: root
+        mode: "0755"
+      notify: Restart client auth gateway
+
+    - name: Install the release administration CLI
+      ansible.builtin.copy:
+        src: client-auth-admin.py
+        dest: /usr/local/sbin/client-auth-admin
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Install the client authentication CA for Traefik
+      ansible.builtin.copy:
+        src: /matrix/client-auth/pki/ca.pem
+        remote_src: true
+        dest: /matrix/traefik/ssl/client-ca.pem
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Make the public release registry available to the gateway
+      ansible.builtin.file:
+        path: /matrix/client-auth/data/client-auth.sqlite3
+        state: file
+        owner: matrix
+        group: matrix
+        mode: "0640"
+
+    - name: Check that Traefik requests and verifies optional client certificates
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -F
+          - VerifyClientCertIfGiven
+          - /matrix/traefik/config/provider.yml
+      changed_when: false
+
+    - name: Check that Traefik rejects aliased forwarded headers
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -F
+          - 'aliasHeadersStrategy: reject'
+          - /matrix/traefik/config/traefik.yml
+      changed_when: false
+
+    - name: Install private gateway routing labels
+      ansible.builtin.template:
+        src: client-auth-labels.j2
+        dest: /matrix/client-auth/config/labels
+        owner: root
+        group: root
+        mode: "0600"
+      notify: Restart client auth gateway
+
+    - name: Install the gateway service
+      ansible.builtin.template:
+        src: matrix-client-auth.service.j2
+        dest: /etc/systemd/system/matrix-client-auth.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Reload systemd
+        - Restart client auth gateway
+
+    - name: Enable and start the staged gateway
+      ansible.builtin.systemd_service:
+        name: matrix-client-auth.service
+        enabled: true
+        state: started
+        daemon_reload: true
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+
+    - name: Restart client auth gateway
+      ansible.builtin.systemd_service:
+        name: matrix-client-auth.service
+        state: restarted
