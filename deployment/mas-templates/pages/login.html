@@ -13,10 +13,6 @@ Please see LICENSE files in the repository root for full details.
 {% block content %}
   <form method="POST" class="flex flex-col gap-10">
     <header class="page-heading">
-      <div class="icon">
-        {{ icon.user_profile_solid() }}
-      </div>
-
       {% if next and next.kind == "link_upstream" %}
         <div class="header">
           <h1 class="title">{{ _("mas.login.link.headline") }}</h1>
@@ -26,7 +22,6 @@ Please see LICENSE files in the repository root for full details.
       {% else %}
         <div class="header">
           <h1 class="title">{{ _("mas.login.headline") }}</h1>
-          <p class="text">{{ _("mas.login.description") }}</p>
         </div>
       {% endif %}
     </header>
