@@ -124,6 +124,14 @@
           - result=ok
           - /var/lib/gz-acme-renew/status
       changed_when: false
+    - name: Require all TLS consumers to match the installed certificate
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/grep
+          - -Fx
+          - served_certificates=matched
+          - /var/lib/gz-acme-renew/status
+      changed_when: false
     - name: Inspect renewal status freshness
       ansible.builtin.stat:
         path: /var/lib/gz-acme-renew/status
