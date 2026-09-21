@@ -1,0 +1,116 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+- name: Verify gz ACME renewal state without changing it
+  hosts: matrix_servers
+  become: true
+  tasks:
+    - name: Inspect TCP 80 listeners
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/ss
+          - -H
+          - -ltn
+          - sport = :80
+      register: gz_acme_port_80
+      changed_when: false
+    - name: Require TCP 80 to be free outside ACME renewal
+      ansible.builtin.assert:
+        that: gz_acme_port_80.stdout | trim | length == 0
+        fail_msg: TCP 80 is reserved for acme.sh standalone HTTP-01 and must not have a persistent listener.
+    - name: Verify standalone renewal mode
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/grep
+          - -Fx
+          - Le_Webroot='no'
+          - /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf
+      changed_when: false
+      no_log: true
+    - name: Verify the short-lived certificate profile
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/grep
+          - -Fx
+          - Le_Certificate_Profile='shortlived'
+          - /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf
+      changed_when: false
+      no_log: true
+    - name: Verify the three-day renewal window
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/grep
+          - -Fx
+          - Le_RenewalDays='3'
+          - /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf
+      changed_when: false
+      no_log: true
+    - name: Verify the combined certificate reload hook is registered
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/grep
+          - -Eq
+          - ^Le_ReloadCmd='[^']+'$
+          - /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf
+      changed_when: false
+      no_log: true
+    - name: Read root cron privately
+      ansible.builtin.command: /usr/bin/crontab -l
+      register: gz_root_cron
+      changed_when: false
+      no_log: true
+    - name: Require the acme.sh renewal cron
+      ansible.builtin.assert:
+        that:
+          - "'acme.sh' in gz_root_cron.stdout"
+          - "'--cron' in gz_root_cron.stdout"
+        fail_msg: The root acme.sh renewal cron is missing.
+      no_log: true
+    - name: Require at least one day of certificate validity
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/openssl
+          - x509
+          - -checkend
+          - '86400'
+          - -noout
+          - -in
+          - /etc/peacelove/tls/fullchain.pem
+      changed_when: false
+    - name: Require the public IP in the certificate SAN
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/openssl
+          - x509
+          - -checkip
+          - 8.163.2.191
+          - -noout
+          - -in
+          - /etc/peacelove/tls/fullchain.pem
+      changed_when: false
+    - name: Verify the installed certificate chain
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/openssl
+          - verify
+          - -CApath
+          - /etc/ssl/certs
+          - -untrusted
+          - /etc/peacelove/tls/fullchain.pem
+          - /etc/peacelove/tls/fullchain.pem
+      changed_when: false
+    - name: Inspect certificate reload helpers
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /etc/peacelove/tls-reload.sh
+        - /usr/local/sbin/matrix-tls-sync
+      register: gz_acme_reload_helpers
+    - name: Require executable reload helpers
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.executable
+      loop: "{{ gz_acme_reload_helpers.results }}"
+      loop_control:
+        label: "{{ item.item }}"

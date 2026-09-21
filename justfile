@@ -20,6 +20,7 @@ gz-check:
     {{gz_ansible}} -i inventory/hosts setup.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/bootstrap.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/install-tls.yml --syntax-check
+    {{gz_ansible}} -i inventory/hosts deployment/verify-acme.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/provision-family-room.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/publish-family-public.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/publish-mas-branding.yml --syntax-check
@@ -35,9 +36,13 @@ gz-deploy:
     {{gz_ansible}} -i inventory/hosts deployment/install-tls.yml
     {{gz_ansible}} -i inventory/hosts setup.yml --tags=start,ensure-matrix-users-created
 
-# Checks public HTTPS, authentication, TURN, and RTC listeners.
+# Checks public HTTPS, authentication, TURN, RTC, and that TCP 80 is ACME-only.
 gz-verify:
     {{gz_python}} deployment/verify.py
+
+# Checks renewal mode, cron, certificate lifetime, and the reserved TCP 80 locally.
+gz-acme-verify:
+    {{gz_ansible}} -i inventory/hosts deployment/verify-acme.yml
 
 # Idempotently provisions and verifies the isolated private unencrypted rooms.
 gz-family-room:

@@ -65,7 +65,8 @@ livekit_server_container_labels_turn_traefik_rule: HostSNI(`*`)
 # Existing acme.sh installation manages the shared IP certificate.
 traefik_config_certificatesResolvers_acme_enabled: false
 traefik_ssl_dir_enabled: true
-traefik_config_entrypoint_web_to_web_secure_redirection_enabled: false
+# TCP 80 is reserved for acme.sh's short-lived standalone HTTP-01 listener.
+traefik_config_entrypoint_web_enabled: false
 traefik_configuration_extension_yaml: |
   providers:
     file:
@@ -80,24 +81,6 @@ traefik_provider_configuration_extension_yaml: |
         defaultCertificate:
           certFile: /ssl/fullchain.pem
           keyFile: /ssl/privkey.pem
-  http:
-    routers:
-      acme-webroot:
-        rule: Host(`8.163.2.191`) && PathPrefix(`/.well-known/acme-challenge/`)
-        entryPoints: [web]
-        service: matrix-static-files@docker
-        priority: 1000
-      redirect-https:
-        rule: Host(`8.163.2.191`)
-        entryPoints: [web]
-        service: noop@internal
-        middlewares: [redirect-https]
-        priority: 1
-    middlewares:
-      redirect-https:
-        redirectScheme:
-          scheme: https
-          permanent: true
 
 matrix_static_files_container_labels_base_domain_enabled: true
 matrix_static_files_container_labels_base_domain_traefik_hostname: 8.163.2.191

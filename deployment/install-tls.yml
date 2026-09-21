@@ -5,6 +5,15 @@
   hosts: matrix_servers
   become: true
   tasks:
+    - name: Verify the saved ACME domain before changing renewal mode
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/grep
+          - -Fx
+          - Le_Domain='8.163.2.191'
+          - /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf
+      changed_when: false
+      no_log: true
     - name: Back up existing ACME domain configuration once
       ansible.builtin.copy:
         src: /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf
@@ -13,6 +22,39 @@
         force: false
         mode: '0600'
       no_log: true
+    - name: Back up ACME configuration before standalone renewal once
+      ansible.builtin.copy:
+        src: /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf
+        dest: /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf.before-standalone
+        remote_src: true
+        force: false
+        mode: '0600'
+      no_log: true
+    - name: Save standalone HTTP-01 as the renewal mode
+      ansible.builtin.lineinfile:
+        path: /root/.acme.sh/8.163.2.191_ecc/8.163.2.191.conf
+        regexp: ^Le_Webroot=
+        line: Le_Webroot='no'
+        owner: root
+        group: root
+        mode: '0600'
+      no_log: true
+    - name: Check the standalone ACME server prerequisite
+      ansible.builtin.command: /usr/bin/python3 --version
+      changed_when: false
+    - name: Inspect the reserved ACME port
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/ss
+          - -H
+          - -ltn
+          - sport = :80
+      register: gz_acme_port_80
+      changed_when: false
+    - name: Require TCP 80 to be free outside ACME renewal
+      ansible.builtin.assert:
+        that: gz_acme_port_80.stdout | trim | length == 0
+        fail_msg: TCP 80 is reserved for acme.sh standalone HTTP-01 and must not have a persistent listener.
     - name: Install certificate synchronization helper
       ansible.builtin.copy:
         src: matrix-tls-sync.sh
@@ -23,13 +65,6 @@
     - name: Synchronize current certificate
       ansible.builtin.command: /usr/local/sbin/matrix-tls-sync
       changed_when: true
-    - name: Prepare the HTTP challenge directory
-      ansible.builtin.file:
-        path: /matrix/static-files/public/.well-known/acme-challenge
-        state: directory
-        owner: matrix
-        group: matrix
-        mode: '0755'
     - name: Preserve certificate destinations and reload both HTTPS services
       ansible.builtin.command:
         argv:

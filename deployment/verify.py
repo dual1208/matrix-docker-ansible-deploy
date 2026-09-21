@@ -79,6 +79,17 @@ def check_rtc_tcp() -> dict:
         return {"port": 7881}
 
 
+def check_acme_port_reserved() -> dict:
+    try:
+        with socket.create_connection((HOST, 80), timeout=5) as tcp:
+            tcp.sendall(b"GET / HTTP/1.0\r\nHost: 8.163.2.191\r\n\r\n")
+            response = tcp.recv(32)
+    except OSError:
+        response = b""
+    assert not response, "TCP 80 serves application traffic; reserve it for ACME HTTP-01"
+    return {"port": 80, "state": "no-http-service", "purpose": "acme-http-01-only"}
+
+
 def run_check(check: tuple[str, Callable[[], dict]]) -> dict:
     name, operation = check
     try:
@@ -99,6 +110,7 @@ def main() -> None:
         ("rtc_auth", check_rtc_auth),
         ("turn_udp", check_turn_udp),
         ("rtc_tcp", check_rtc_tcp),
+        ("acme_port_reserved", check_acme_port_reserved),
     ]
     with ThreadPoolExecutor(max_workers=4) as executor:
         checks = list(executor.map(run_check, operations))
