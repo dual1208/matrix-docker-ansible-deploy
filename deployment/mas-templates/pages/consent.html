@@ -11,11 +11,13 @@ Please see LICENSE files in the repository root for full details.
 {% extends "base.html" %}
 
 {% block content %}
-  {% set client_display_name = client.client_name or client.client_id %}
+  {% set is_family_client = client.client_id == "01M2VM6HEE7G54S8RFEJEFK7DT" %}
+  {% set client_display_name = "家庭聊天" if is_family_client else client.client_name or client.client_id %}
   {# The URI we can display to distinguish this client #}
-  {% set client_display_uri = ((client.client_uri or "") | simplify_url) or "<no client_uri provided>" %}
+  {% set client_display_uri = ((client.client_uri or "") | simplify_url) or "未提供应用网址" %}
 
   <header class="page-heading">
+    {% if not is_family_client %}
     <div class="flex justify-center">
       {% if client.logo_uri %}
       <img class="consent-client-icon image" referrerpolicy="no-referrer" src="{{ client.logo_uri }}" />
@@ -25,14 +27,17 @@ Please see LICENSE files in the repository root for full details.
       </div>
       {% endif %}
     </div>
+    {% endif %}
 
     <div class="header">
       <h1 class="title">
-        {{ _('mas.consent.continue_to', client_name=client_display_name) }}
+        {% if is_family_client %}登录家庭聊天{% else %}{{ _('mas.consent.continue_to', client_name=client_display_name) }}{% endif %}
       </h1>
+      {% if not is_family_client %}
       <p class="text [&>span]:whitespace-nowrap [&>span]:text-[var(--cpd-color-text-link-external)]">
         {{ _("mas.consent.this_will_setup", client_name=client_display_name, client_uri=client_display_uri, server_name=branding.server_name) }}
       </p>
+      {% endif %}
     </div>
   </header>
 
@@ -61,7 +66,11 @@ Please see LICENSE files in the repository root for full details.
     <div class="avatar-placeholder" data-color="{{ matrix_user.mxid | id_color_hash }}">{{ initial }}</div>
     <div class="flex flex-col">
       <div class="text-primary cpd-text-body-lg-semibold">{{ matrix_user.display_name or current_session.user.username }}</div>
+      {% if not is_family_client %}
       <div class="text-secondary cpd-text-body-md-regular">{{ matrix_user.mxid }}</div>
+      {% elif matrix_user.display_name and matrix_user.display_name != current_session.user.username %}
+      <div class="text-secondary cpd-text-body-md-regular">{{ current_session.user.username }}</div>
+      {% endif %}
     </div>
   </section>
 
