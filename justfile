@@ -21,6 +21,8 @@ gz-check:
     {{gz_ansible}} -i inventory/hosts deployment/bootstrap.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/install-tls.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/provision-family-room.yml --syntax-check
+    {{gz_ansible}} -i inventory/hosts deployment/publish-family-public.yml --syntax-check
+    {{gz_ansible}} -i inventory/hosts deployment/install-push-credentials.yml --syntax-check
     {{gz_python}} -m unittest deployment/test_provision_room.py
     sh -n deployment/matrix-tls-sync.sh
 
@@ -35,9 +37,17 @@ gz-deploy:
 gz-verify:
     {{gz_python}} deployment/verify.py
 
-# Idempotently provisions and verifies the private encrypted Family room.
+# Idempotently provisions and verifies the isolated private unencrypted rooms.
 gz-family-room:
     {{gz_ansible}} -i inventory/hosts deployment/provision-family-room.yml
+
+gz-family-public:
+    {{gz_ansible}} -i inventory/hosts deployment/publish-family-public.yml
+
+# Installs a dormant local push gateway after owner credentials are present.
+gz-push-prepare:
+    {{gz_ansible}} -i inventory/hosts deployment/install-push-credentials.yml
+    {{gz_ansible}} -i inventory/hosts setup.yml --tags=setup-sygnal -e @deployment/push-gateway-vars.yml
 
 # Adds a new host to the inventory, creating the inventory files if necessary (e.g. `just add-inventory-host example.com 1.2.3.4`)
 add-inventory-host domain server_address:

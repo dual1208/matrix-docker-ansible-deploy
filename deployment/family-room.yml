@@ -1,9 +1,26 @@
 # SPDX-FileCopyrightText: 2026 dual1208
 # SPDX-License-Identifier: AGPL-3.0-or-later
 ---
-gz_family_room_id: "!zeH0LfJ1UQUIIR1Zm0or2b843_84zsDIYH4qxw-kDew"
-gz_family_room_name: Family
-gz_family_room_owner_localpart: api30
-gz_family_room_member_localparts:
-  - api30
-  - tcnowifi
+gz_managed_rooms:
+  - key: family
+    room_id: "!_-bzJ4bmo3TT-VHRkkaBkDyPch8zZu_BTPkHRIpaB44"
+    name: 家庭群
+    owner_localpart: xie
+    member_localparts: [xie, tyson, lawyerche]
+    display_names:
+      xie: 妈妈
+      tyson: 儿子
+      lawyerche: 爸爸
+  - key: development
+    room_id: "!xyB-SrePbfrBbhD3k-SOOnt_hiunqsfrXk7syYnTA0o"
+    name: 测试群
+    owner_localpart: api30
+    member_localparts: [api30, tcnowifi]
+    display_names: {}
+  - key: app-review
+    room_id: "!4xPNX-nCYec0FKHt83DOuQxOpnwElo7uD4Ldnr5yBQk"
+    name: 审核演示群
+    owner_localpart: appreview
+    member_localparts: [appreview]
+    display_names:
+      appreview: 审核员

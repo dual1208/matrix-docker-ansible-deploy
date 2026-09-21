@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+- name: Publish the family app support and privacy pages
+  hosts: matrix_servers
+  become: true
+  gather_facts: false
+  vars:
+    gz_matrix_static_files_public_path: /matrix/static-files/public
+  tasks:
+    - name: Create public family page directories
+      ansible.builtin.file:
+        path: "{{ gz_matrix_static_files_public_path }}/family/{{ item }}"
+        state: directory
+        owner: matrix
+        group: matrix
+        mode: "0755"
+      loop:
+        - support
+        - privacy
+
+    - name: Publish family app pages
+      ansible.builtin.copy:
+        src: "family-public/{{ item }}.html"
+        dest: "{{ gz_matrix_static_files_public_path }}/family/{{ item }}/index.html"
+        owner: matrix
+        group: matrix
+        mode: "0644"
+      loop:
+        - support
+        - privacy
+
+    - name: Verify the public pages over the existing TLS entry point
+      ansible.builtin.uri:
+        url: "https://{{ matrix_server_fqn_matrix }}/family/{{ item }}/"
+        validate_certs: true
+        return_content: false
+        status_code: 200
+      loop:
+        - support
+        - privacy

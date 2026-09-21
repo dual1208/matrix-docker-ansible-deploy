@@ -620,6 +620,10 @@ matrix_authentication_service_container_labels_traefik_additional_response_heade
 #   another.label="here"
 matrix_authentication_service_container_labels_additional_labels: ''
 
+# Request headers sent to Matrix Authentication Service by Traefik. This is
+# useful for deployments which need a consistent locale on the hosted login UI.
+matrix_authentication_service_container_labels_traefik_additional_request_headers: {}
+
 ########################################################################################
 #                                                                                      #
 # /Labels                                                                              #

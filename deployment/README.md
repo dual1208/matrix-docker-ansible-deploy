@@ -35,27 +35,28 @@ On 2026-09-19, Alibaba Cloud CLI 3.5.1 with the existing `tyson` OAuth profile c
 
 Repository entry points are `just gz-check`, `just gz-deploy`, and `just gz-verify`. Set `GZ_ANSIBLE` and `GZ_PYTHON` to the installed virtualenv executables, or put its `bin` directory on `PATH`. The parent workspace does this automatically. Deployment uses the existing inventory and account secrets; preserve them when moving the checkout.
 
-## Family room
+## Managed rooms
 
-The managed family conversation is room `!zeH0LfJ1UQUIIR1Zm0or2b843_84zsDIYH4qxw-kDew`. It is named `Family`, owned by `api30`, and has exactly the provisioned `api30` and `tcnowifi` accounts as joined members. The room was created empty with end-to-end encryption, shared history visibility, forbidden guest access, invite-only membership, private directory visibility, and federation disabled in the room creation event.
+The server provisions three isolated, private, unencrypted rooms:
 
-Run `just gz-family-room` to check these invariants and repair a missing membership only while the entire room timeline is still empty. The provisioner verifies security-sensitive room state before any membership change. Once messages exist, it fails with instructions to invite from a trusted history-holding client and let the managed client accept the invitation. It obtains working access through unique temporary MAS compatibility sessions, performs ordinary Matrix client operations, logs out those sessions immediately, and confirms that their tokens no longer authenticate. Compatibility sessions do not currently have a configured automatic lifetime, so successful logout verification is mandatory. It does not read or change either account password, and it does not touch existing phone sessions or encryption recovery data. A mismatch in an immutable or security-sensitive room property fails instead of silently replacing the room.
+- `家庭群` (`!_-bzJ4bmo3TT-VHRkkaBkDyPch8zZu_BTPkHRIpaB44`) contains only `xie`, `tyson`, and `lawyerche`.
+- `测试群` (`!xyB-SrePbfrBbhD3k-SOOnt_hiunqsfrXk7syYnTA0o`) contains only the development accounts `api30` and `tcnowifi`.
+- `审核演示群` (`!4xPNX-nCYec0FKHt83DOuQxOpnwElo7uD4Ldnr5yBQk`) contains only the private `appreview` account.
 
-Room membership does not provide encryption history by itself. Because this room is empty at provisioning time, both accounts can establish encryption on their actual phones before any family messages are sent. Do not claim that old history is recoverable until each account's client-side recovery and key backup have been exercised with the original phone unavailable.
+All three have shared history, forbidden guest access, invite-only membership, private directory visibility, and federation disabled in the room creation event. They deliberately have no `m.room.encryption` state event: transport remains protected by HTTPS, but the server administrator can read stored messages and media. The earlier encrypted `Family` room and its accounts/history remain untouched.
 
-### Isolated App Review room
+Run `just gz-family-room` to verify and repair these rooms. The provisioner checks every security invariant before membership changes, never sends a message, uses temporary MAS compatibility sessions for ordinary Matrix client operations, logs out each session, and confirms its token no longer authenticates. It assigns each member a room through global account data type `io.familychat.assigned_room` with content `{"room_id": "!opaqueRoomId"}`. Both native clients read this mapping after sync and fail closed when it is absent or malformed; no room ID belongs in the binary.
 
-Do not give an external reviewer a real family account or add a reviewer account to the Family room. Once a dedicated reviewer account has been approved and added to the private inventory by its owner, use the same provisioner with a separate one-member room and a different room name. Override all room variables in one Ansible invocation and leave the room ID empty only on the first run so the provisioner discovers or creates a single exact-name room:
+The real family accounts must never be logged into development phones or used for test messages. Development accounts have no membership in `家庭群`, and the App Review account has membership only in `审核演示群`. Reviewer credentials remain in the ignored mode-0600 inventory and may be shared only through App Store Connect after the owner approves them.
 
-```sh
-ansible-playbook -i inventory/hosts deployment/provision-family-room.yml \
-  --extra-vars '{"gz_family_room_id":"","gz_family_room_name":"App Review Demo","gz_family_room_owner_localpart":"<reviewer-localpart>","gz_family_room_member_localparts":["<reviewer-localpart>"]}'
-```
+## Public support pages and hosted UI
 
-Record the returned room ID in a private review-specific vars file before repeating the command. Use unique reviewer credentials, share them only through App Store Connect, and remove or lock the reviewer account after review. This path creates neither an enrollment service nor server-side recovery-secret escrow, and it grants no access to the real Family room.
+Run `just gz-family-public` to publish and verify the static support and privacy pages at `https://8.163.2.191/family/support/` and `https://8.163.2.191/family/privacy/` through the existing TLS/static-files service. Matrix Authentication Service receives `Accept-Language: zh-Hans,zh;q=0.9` from the local Traefik route so its hosted login pages select Simplified Chinese. Element Call web hosting is disabled; public discovery advertises only this server's MAS and self-hosted LiveKit JWT service, with no `call.element.io` URL.
 
-The current mobile builds embed the real Family room ID globally, so provisioning this separate room alone does not yet produce a usable App Review login. Before submitting reviewer credentials, the same final binary and feature set must support safe per-account assigned-room routing, or another owner-approved isolation design must be in place. Do not submit real family credentials, add a reviewer to the Family room, or use a review-only binary with different behavior.
+Synapse usage reporting is disabled and its Sentry DSN is explicitly empty. No analytics, crash-reporting, metrics-export, or external monitoring service is enabled by this deployment.
 
-### Current push status
+## Current push status
 
-At provisioning time Synapse had one HTTP pusher for `api30`, using the stock Element Android app identifier and the public Matrix.org push gateway. `tcnowifi` had no registered pusher. This proves only that one existing client registered a push route; the independently identified Android and iOS forks still need their own matching push credentials and gateway configuration before notification delivery can be claimed.
+The server-side Sygnal push gateway is disabled, and neither mobile repository contains an FCM service-account configuration, Apple push signing key, or matching self-hosted gateway credentials. The obsolete stock Element Android pusher which targeted Matrix.org was removed from `api30` without revoking its phone session. Locked-screen notification or ringing delivery remains blocked until the owner supplies platform credentials.
+
+When credentials exist, store the `gz_push_*` values only in the ignored mode-0600 secrets inventory and run `just gz-push-prepare`. The recipe writes provider keys as mode-0600 files and installs a Sygnal definition at the local `/push` path, with metrics, tracing, and Sentry disabled. It deliberately does not start the service; first update both native clients with their final app IDs, matching FCM/APNs configuration, and the local gateway URL, then validate delivery before starting it.

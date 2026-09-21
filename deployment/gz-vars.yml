@@ -18,6 +18,12 @@ coturn_enabled: false
 matrix_homeserver_federation_enabled: false
 matrix_synapse_workers_enabled: false
 matrix_synapse_report_stats: false
+matrix_synapse_sentry_dsn: ""
+matrix_synapse_usage_exporter_enabled: false
+matrix_rageshake_enabled: false
+matrix_sygnal_enabled: false
+prometheus_enabled: false
+grafana_enabled: false
 matrix_synapse_enable_registration: false
 matrix_synapse_allow_guest_access: false
 matrix_synapse_event_cache_size: 10K
@@ -32,6 +38,8 @@ matrix_authentication_service_enabled: true
 matrix_authentication_service_config_account_password_registration_enabled: false
 matrix_authentication_service_config_account_password_registration_email_required: false
 matrix_authentication_service_config_email_transport: blackhole
+matrix_authentication_service_container_labels_traefik_additional_request_headers:
+  Accept-Language: zh-Hans,zh;q=0.9
 matrix_authentication_service_config_clients_custom:
   - client_id: 01M2VM6HEE7G54S8RFEJEFK7DT
     client_auth_method: none

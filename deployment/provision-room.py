@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 dual1208
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Provision and verify one private encrypted Matrix room using temporary MAS sessions."""
+"""Provision one private unencrypted Matrix room using temporary MAS sessions."""
 
 import argparse
 import json
@@ -35,6 +35,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--name", required=True)
     parser.add_argument("--owner", required=True)
     parser.add_argument("--members", required=True, help="Comma-separated localparts")
+    parser.add_argument(
+        "--display-names",
+        default="{}",
+        help="JSON object mapping localparts to display names",
+    )
     parser.add_argument("--room-id", default="")
     parser.add_argument(
         "--mas-cli",
@@ -50,6 +55,9 @@ class Provisioner:
         self.name = args.name
         self.owner = args.owner
         self.members = list(dict.fromkeys([args.owner, *args.members.split(",")]))
+        self.display_names = json.loads(args.display_names)
+        if not isinstance(self.display_names, dict):
+            raise ValueError("--display-names must be a JSON object")
         self.expected_room_id = args.room_id
         self.mas_cli = args.mas_cli
         self.context = ssl.create_default_context()
@@ -144,11 +152,6 @@ class Provisioner:
             "creation_content": {"m.federate": False},
             "initial_state": [
                 {
-                    "type": "m.room.encryption",
-                    "state_key": "",
-                    "content": {"algorithm": "m.megolm.v1.aes-sha2"},
-                },
-                {
                     "type": "m.room.history_visibility",
                     "state_key": "",
                     "content": {"history_visibility": "shared"},
@@ -194,8 +197,7 @@ class Provisioner:
             "name": content("m.room.name").get("name") == self.name,
             "owner": create.get("sender") == self.mxid(self.owner),
             "federate_disabled": create.get("content", {}).get("m.federate") is False,
-            "encrypted": content("m.room.encryption").get("algorithm")
-            == "m.megolm.v1.aes-sha2",
+            "unencrypted": ("m.room.encryption", "") not in state,
             "shared_history": content("m.room.history_visibility").get("history_visibility")
             == "shared",
             "guests_forbidden": content("m.room.guest_access").get("guest_access")
@@ -214,36 +216,6 @@ class Provisioner:
             if memberships.get(self.mxid(member)) != "join"
         ]
         return checks, missing_members
-
-    def room_has_messages(self, room_id: str) -> bool:
-        encoded = self.encoded_room_id(room_id)
-        event_filter = json.dumps(
-            {"types": ["m.room.message", "m.room.encrypted"]},
-            separators=(",", ":"),
-        )
-        from_token = ""
-        seen_tokens: set[str] = set()
-        while True:
-            query = {"dir": "b", "limit": "1", "filter": event_filter}
-            if from_token:
-                query["from"] = from_token
-            document = self.request(
-                self.owner,
-                "GET",
-                f"/_matrix/client/v3/rooms/{encoded}/messages?{urllib.parse.urlencode(query)}",
-            )[1]
-            if any(
-                event.get("type") in {"m.room.message", "m.room.encrypted"}
-                for event in document.get("chunk", [])
-            ):
-                return True
-            end_token = document.get("end", "")
-            if not end_token or end_token == from_token:
-                return False
-            if end_token in seen_tokens:
-                raise ProvisionError("Room message pagination did not terminate")
-            seen_tokens.add(end_token)
-            from_token = end_token
 
     def ensure_membership(self, room_id: str, missing_members: list[str]) -> bool:
         changed = False
@@ -264,6 +236,57 @@ class Provisioner:
                 changed = True
             self.request(member, "POST", f"/_matrix/client/v3/join/{encoded}", {})
             changed = True
+        return changed
+
+    def ensure_profile_and_assignment(self, room_id: str) -> bool:
+        changed = False
+        event_type = urllib.parse.quote("io.familychat.assigned_room", safe="")
+        for member in self.members:
+            mxid = self.mxid(member)
+            encoded_mxid = urllib.parse.quote(mxid, safe="")
+            display_name = self.display_names.get(member)
+            if display_name:
+                profile = self.request(
+                    member,
+                    "GET",
+                    f"/_matrix/client/v3/profile/{encoded_mxid}/displayname",
+                    expected_statuses=(200, 404),
+                )[1]
+                if profile.get("displayname") != display_name:
+                    self.request(
+                        member,
+                        "PUT",
+                        f"/_matrix/client/v3/profile/{encoded_mxid}/displayname",
+                        {"displayname": display_name},
+                    )
+                    changed = True
+
+                encoded_room_id = self.encoded_room_id(room_id)
+                member_path = (
+                    f"/_matrix/client/v3/rooms/{encoded_room_id}/state/"
+                    f"m.room.member/{encoded_mxid}"
+                )
+                _, member_content = self.request(member, "GET", member_path)
+                if member_content.get("displayname") != display_name:
+                    desired_member_content = dict(member_content)
+                    desired_member_content["membership"] = "join"
+                    desired_member_content["displayname"] = display_name
+                    self.request(member, "PUT", member_path, desired_member_content)
+                    changed = True
+
+            assignment_path = (
+                f"/_matrix/client/v3/user/{encoded_mxid}/account_data/{event_type}"
+            )
+            _, current = self.request(
+                member, "GET", assignment_path, expected_statuses=(200, 404)
+            )
+            desired = {"room_id": room_id}
+            if current != desired:
+                self.request(member, "PUT", assignment_path, desired)
+                changed = True
+                _, current = self.request(member, "GET", assignment_path)
+            if current != desired:
+                raise ProvisionError(f"Assigned room account data did not persist for {member}")
         return changed
 
     def revoke_sessions(self) -> list[str]:
@@ -304,24 +327,17 @@ class Provisioner:
             raise ProvisionError("Discovered room does not match the configured room ID")
 
         checks, missing_members = self.inspect_room(room_id)
-        was_empty_before_membership = None
-        if created or missing_members:
-            was_empty_before_membership = not self.room_has_messages(room_id)
-        if missing_members and not was_empty_before_membership:
-            raise ProvisionError(
-                "Room contains message history; invite from a trusted history-holding client "
-                "and let the managed client accept the invitation"
-            )
-
         membership_changed = self.ensure_membership(room_id, missing_members)
         if membership_changed and action == "verified":
             action = "membership-repaired"
         changed = changed or membership_changed
+        assignment_changed = self.ensure_profile_and_assignment(room_id)
+        if assignment_changed and action == "verified":
+            action = "metadata-updated"
+        changed = changed or assignment_changed
         checks, remaining_members = self.inspect_room(room_id)
         checks["expected_members_joined"] = not remaining_members
         checks["only_expected_members"] = checks.pop("no_unexpected_active_members")
-        if created:
-            checks["no_messages_at_creation"] = was_empty_before_membership is True
         failed = [name for name, passed in checks.items() if not passed]
         if failed:
             raise ProvisionError("Room verification failed: " + ", ".join(failed))

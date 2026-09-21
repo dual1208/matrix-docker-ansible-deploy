@@ -16,7 +16,7 @@ SPEC.loader.exec_module(provision_room)
 
 
 class FakeProvisioner(provision_room.Provisioner):
-    def __init__(self, *, encrypted: bool = True, history_pages: list[dict] | None = None) -> None:
+    def __init__(self, *, encrypted: bool = False) -> None:
         super().__init__(
             argparse.Namespace(
                 homeserver_url="https://example.com",
@@ -24,12 +24,12 @@ class FakeProvisioner(provision_room.Provisioner):
                 name="Family",
                 owner="owner",
                 members="owner,member",
+                display_names="{}",
                 room_id="!family:example.com",
                 mas_cli="mas-cli",
             )
         )
         self.encrypted = encrypted
-        self.history_pages = iter(history_pages or [{"chunk": []}])
         self.mutations: list[str] = []
 
     def issue_session(self, localpart: str):
@@ -67,8 +67,6 @@ class FakeProvisioner(provision_room.Provisioner):
     def request(self, localpart, method, path, body=None, expected_statuses=(200,)):
         if method == "GET" and "/directory/list/room/" in path:
             return 200, {"visibility": "private"}
-        if method == "GET" and "/messages?" in path:
-            return 200, next(self.history_pages)
         if method == "POST":
             self.mutations.append(path)
             return 200, {}
@@ -77,26 +75,12 @@ class FakeProvisioner(provision_room.Provisioner):
 
 class ProvisionerGuardTests(unittest.TestCase):
     def test_insecure_room_is_not_mutated(self) -> None:
-        provisioner = FakeProvisioner(encrypted=False)
+        provisioner = FakeProvisioner(encrypted=True)
 
-        with self.assertRaisesRegex(provision_room.ProvisionError, "encrypted"):
+        with self.assertRaisesRegex(provision_room.ProvisionError, "unencrypted"):
             provisioner.run()
 
         self.assertEqual(provisioner.mutations, [])
-
-    def test_history_is_paginated_and_blocks_membership_repair(self) -> None:
-        provisioner = FakeProvisioner(
-            history_pages=[
-                {"chunk": [], "end": "next-page"},
-                {"chunk": [{"type": "m.room.encrypted"}]},
-            ]
-        )
-
-        with self.assertRaisesRegex(provision_room.ProvisionError, "trusted history-holding client"):
-            provisioner.run()
-
-        self.assertEqual(provisioner.mutations, [])
-
 
 if __name__ == "__main__":
     unittest.main()

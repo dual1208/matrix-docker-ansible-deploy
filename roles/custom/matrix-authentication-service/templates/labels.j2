@@ -21,6 +21,13 @@ traefik.http.services.matrix-authentication-service.loadbalancer.server.port=808
 
 {% set main_middlewares = [] %}
 
+{% if matrix_authentication_service_container_labels_traefik_additional_request_headers.keys() | length > 0 %}
+{% for name, value in matrix_authentication_service_container_labels_traefik_additional_request_headers.items() %}
+traefik.http.middlewares.matrix-authentication-service-add-request-headers.headers.customrequestheaders.{{ name }}={{ value }}
+{% endfor %}
+{% set main_middlewares = main_middlewares + ['matrix-authentication-service-add-request-headers'] %}
+{% endif %}
+
 {% if matrix_authentication_service_container_labels_public_main_path_prefix != '/' %}
 traefik.http.middlewares.matrix-authentication-service-slashless-redirect.redirectregex.regex=({{ matrix_authentication_service_container_labels_public_main_path_prefix | quote }})$
 traefik.http.middlewares.matrix-authentication-service-slashless-redirect.redirectregex.replacement=${1}/

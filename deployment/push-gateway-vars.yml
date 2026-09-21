@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+# Loaded only by `just gz-push-prepare`, after the private credential playbook.
+# The recipe installs the service definition but deliberately does not start it.
+matrix_sygnal_enabled: true
+matrix_sygnal_hostname: "{{ matrix_server_fqn_matrix }}"
+matrix_sygnal_path_prefix: /push
+matrix_sygnal_metrics_prometheus_enabled: false
+matrix_sygnal_apps:
+  "{{ gz_push_android_app_id }}":
+    type: gcm
+    api_version: v1
+    project_id: "{{ gz_push_fcm_project_id }}"
+    service_account_file: /data/fcm-service-account.json
+  "{{ gz_push_ios_app_id }}":
+    type: apns
+    keyfile: /data/apns-auth-key.p8
+    key_id: "{{ gz_push_apns_key_id }}"
+    team_id: "{{ gz_push_apns_team_id }}"
+    topic: "{{ gz_push_apns_topic }}"
+    platform: production
+    push_type: alert
+    convert_device_token_to_hex: false
