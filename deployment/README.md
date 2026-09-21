@@ -62,8 +62,10 @@ CA exists before Traefik loads `VerifyClientCertIfGiven`, then run
 `just gz-client-auth-install`. After both clients pass, persist enforcement as
 true in the same host-vars file and rerun only the install recipe. Future normal
 deployments then retain both settings. Enforcement denies direct Matrix login
-on both 443 and 8448 and denies every `/auth` route except read-only GET/HEAD
-discovery and JWKS. Existing bearer tokens are not revoked.
+and refresh writes on both 443 and 8448 and denies every `/auth` route except
+read-only GET/HEAD discovery and JWKS. The SDK's GET/HEAD login-capability lookup
+receives a fixed response from the gateway; it cannot issue a session. Existing
+bearer tokens are not revoked.
 
 Docker Hub's direct route from this host timed out during initial installation. Image pulls can temporarily use a reverse SOCKS tunnel through the Mac:
 

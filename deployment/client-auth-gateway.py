@@ -59,7 +59,8 @@ class Gateway(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
-        self.wfile.write(payload)
+        if self.command != "HEAD":
+            self.wfile.write(payload)
 
     def read_body(self, maximum: int) -> bytes:
         try:
@@ -76,6 +77,7 @@ class Gateway(BaseHTTPRequestHandler):
     def release_identity(self) -> tuple[str, str] | None:
         forwarded = self.headers.get("X-Forwarded-Tls-Client-Cert")
         if not forwarded:
+            print("Client certificate rejected: missing TLS identity", flush=True)
             return None
         leaf = forwarded.split(",", 1)[0]
         try:
@@ -92,6 +94,8 @@ class Gateway(BaseHTTPRequestHandler):
                      AND not_after_epoch>?""",
                 (fingerprint, int(time.time())),
             ).fetchone()
+        if row is None:
+            print(f"Client certificate rejected: unapproved fingerprint {fingerprint}", flush=True)
         return (fingerprint, row[0]) if row else None
 
     def consume_bucket(self, key: str, burst: float, per_second: float) -> tuple[bool, int]:
@@ -227,11 +231,17 @@ class Gateway(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         if self.path == "/healthz":
             self.send_json(200, {"status": "ok"})
+        elif re.fullmatch(r"/_matrix/client/[^/]+/login", self.path):
+            # The SDK reads login capabilities before the managed native form opens.
+            self.send_json(200, {"flows": [{"type": "m.login.password"}]})
         else:
             self.send_json(
                 403,
                 {"errcode": "M_AUTH_ROUTE_DISABLED", "error": "Route disabled"},
             )
+
+    def do_HEAD(self) -> None:  # noqa: N802
+        self.do_GET()
 
     def do_POST(self) -> None:  # noqa: N802
         if self.path == "/client-auth/login":
