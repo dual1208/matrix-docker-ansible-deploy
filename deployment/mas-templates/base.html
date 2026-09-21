@@ -1,0 +1,38 @@
+{#
+Copyright 2024, 2025 New Vector Ltd.
+Copyright 2021-2024 The Matrix.org Foundation C.I.C.
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+-#}
+
+{% set _ = translator(lang) %}
+
+{% import "components/button.html" as button %}
+{% import "components/field.html" as field %}
+{% import "components/back_to_client.html" as back_to_client %}
+{% import "components/logout.html" as logout %}
+{% import "components/errors.html" as errors %}
+{% import "components/icon.html" as icon %}
+{% import "components/scope.html" as scope %}
+{% import "components/captcha.html" as captcha %}
+
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+  <head>
+    <meta charset="utf-8">
+    <title>{% block title %}{{ _("app.name") }}{% endblock title %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {{ include_asset('src/entrypoints/vendor.css') | indent(4) | safe }}
+    {{ include_asset('src/entrypoints/shared.css') | indent(4) | safe }}
+    {{ include_asset('src/entrypoints/templates.css') | indent(4) | safe }}
+    {{ include_asset('src/entrypoints/templates.ts') | indent(4) | safe }}
+    {{ captcha.head() }}
+  </head>
+  <body>
+    <div class="layout-container{% if consent_page is defined %} consent{% endif %}">
+      {% block content %}{% endblock content %}
+      {% include "components/footer.html" %}
+    </div>
+  </body>
+</html>

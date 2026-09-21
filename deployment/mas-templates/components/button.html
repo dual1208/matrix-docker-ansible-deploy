@@ -1,0 +1,97 @@
+{#
+Copyright 2024, 2025 New Vector Ltd.
+Copyright 2021-2024 The Matrix.org Foundation C.I.C.
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+-#}
+
+{% macro link(text, href="#", class="", size="lg") %}
+  <a class="cpd-button {{ class }}" data-kind="primary" data-size="{{ size }}" href="{{ href | prefix_url }}">{{ text }}</a>
+{% endmacro %}
+
+{% macro link_text(text, href="#", class="") %}
+  <a class="cpd-link {{ class }}" data-kind="primary" href="{{ href | prefix_url }}">{{ text }}</a>
+{% endmacro %}
+
+{% macro link_outline(text, href="#", class="", size="lg") %}
+  <a class="cpd-button {{ class }}" data-kind="secondary" data-size="{{ size }}" href="{{ href | prefix_url }}">{{ text }}</a>
+{% endmacro %}
+
+{% macro link_tertiary(text, href="#", class="", size="lg") %}
+  <a class="cpd-button {{ class }}" data-kind="tertiary" data-size="{{ size }}" href="{{ href | prefix_url }}">{{ text }}</a>
+{% endmacro %}
+
+{% macro button(
+  text,
+  name="",
+  type="submit",
+  class="",
+  value="",
+  disabled=False,
+  kind="primary",
+  size="lg",
+  autocomplete=False,
+  autocorrect=False,
+  autocapitalize=False) %}
+  <button
+    name="{{ name }}"
+    value="{{ value }}"
+    type="{{ type }}"
+    {% if disabled %}disabled{% endif %}
+    class="cpd-button {{ class }}"
+    data-kind="{{ kind }}"
+    data-size="{{ size }}"
+    {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
+    {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+    {% if autocorrect %}autocorrect="{{ autocorrect }}"{% endif %}
+  >{{ text }}</button>
+{% endmacro %}
+
+{% macro button_text(
+  text,
+  name="",
+  type="submit",
+  class="",
+  value="",
+  disabled=False,
+  autocomplete=False,
+  autocorrect=False,
+  autocapitalize=False) %}
+  <button
+    name="{{ name }}"
+    value="{{ value }}"
+    type="{{ type }}"
+    {% if disabled %}disabled{% endif %}
+    data-kind="primary"
+    class="cpd-link {{ class }}"
+    {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
+    {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+    {% if autocorrect %}autocorrect="{{ autocorrect }}"{% endif %}
+  >{{ text }}</button>
+{% endmacro %}
+
+{% macro button_outline(
+  text,
+  name="",
+  type="submit",
+  class="",
+  value="",
+  disabled=False,
+  size="lg",
+  autocomplete=False,
+  autocorrect=False,
+  autocapitalize=False) %}
+  <button
+    name="{{ name }}"
+    value="{{ value }}"
+    type="{{ type }}"
+    class="cpd-button {{ class }}"
+    data-kind="secondary"
+    data-size="{{ size }}"
+    {% if disabled %}disabled{% endif %}
+    {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
+    {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+    {% if autocorrect %}autocorrect="{{ autocorrect }}"{% endif %}
+  >{{ text }}</button>
+{% endmacro %}

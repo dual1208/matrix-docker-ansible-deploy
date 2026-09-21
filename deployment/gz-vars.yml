@@ -40,6 +40,16 @@ matrix_authentication_service_config_account_password_registration_email_require
 matrix_authentication_service_config_email_transport: blackhole
 matrix_authentication_service_container_labels_traefik_additional_request_headers:
   Accept-Language: zh-Hans,zh;q=0.9
+matrix_authentication_service_configuration_extension_yaml: |
+  branding:
+    service_name: 家庭聊天
+    policy_uri: https://8.163.2.191/family/privacy/
+  templates:
+    path: /templates
+    translations_path: /translations
+matrix_authentication_service_container_extra_arguments:
+  - --mount=type=bind,src=/matrix/matrix-authentication-service/config/templates,dst=/templates,ro
+  - --mount=type=bind,src=/matrix/matrix-authentication-service/config/translations,dst=/translations,ro
 matrix_authentication_service_config_clients_custom:
   - client_id: 01M2VM6HEE7G54S8RFEJEFK7DT
     client_auth_method: none

@@ -1,0 +1,47 @@
+{#
+Copyright 2024, 2025 New Vector Ltd.
+Copyright 2024 The Matrix.org Foundation C.I.C.
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-heading">
+    <div class="icon">
+      {{ icon.lock_solid() }}
+    </div>
+
+    <div class="header">
+      <h1 class="title">{{ _("mas.recovery.finish.heading") }}</h1>
+      <p class="text">{{ _("mas.recovery.finish.description") }}</p>
+    </div>
+  </header>
+
+  <form class="cpd-form-root" method="POST">
+    {# Hidden username field so that password manager can save the username #}
+    <input class="hidden" aria-hidden="true" type="text" name="username" autocomplete="username" value="{{ user.username }}" />
+
+    {% if form.errors is not empty %}
+      {% for error in form.errors %}
+        <div class="text-critical font-medium">
+          {{ errors.form_error_message(error=error) }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+
+    {% call(f) field.field(label=_("mas.recovery.finish.new"), name="new_password", form_state=form) %}
+      <input {{ field.attributes(f) }} class="cpd-text-control" type="password" autofocus autocomplete="new-password" required />
+    {% endcall %}
+
+    {% call(f) field.field(label=_("mas.recovery.finish.confirm"), name="new_password_confirm", form_state=form) %}
+      <input {{ field.attributes(f) }} class="cpd-text-control" type="password" autocomplete="new-password" required />
+    {% endcall %}
+
+    {{ button.button(text=_("mas.recovery.finish.save_and_continue"), type="submit") }}
+  </form>
+{% endblock content %}

@@ -1,0 +1,28 @@
+{#
+Copyright 2024, 2025 New Vector Ltd.
+Copyright 2021-2024 The Matrix.org Foundation C.I.C.
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+-#}
+
+{# Early OAuth failures may not carry the negotiated language. #}
+{% set lang = lang or "zh-Hans" %}
+
+{% extends "base.html" %}
+
+{% block content %}
+  <main class="flex flex-col gap-6">
+    <header class="page-heading">
+      <div class="icon invalid">
+        {{ icon.error_solid() }}
+      </div>
+
+      <div class="header">
+        <h1 class="title">{{ _("error.unexpected") }}</h1>
+        {# Public pages intentionally omit raw OAuth diagnostics. #}
+      </div>
+    </header>
+
+  </main>
+{% endblock %}

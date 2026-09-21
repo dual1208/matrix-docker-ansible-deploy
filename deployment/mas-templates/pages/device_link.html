@@ -1,0 +1,47 @@
+{#
+Copyright 2024, 2025 New Vector Ltd.
+Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-heading">
+    <div class="icon">
+      {{ icon.mobile() }}
+    </div>
+
+    <div class="header">
+      <h1 class="title">{{ _("mas.device_code_link.headline") }}</h1>
+      <p class="text">{{ _("mas.device_code_link.description") }}</p>
+    </div>
+  </header>
+
+  <section class="flex flex-col gap-5">
+    <form method="POST" class="cpd-form-root">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+      {% call(f) field.field(label=_("mas.device_code_link.verification_code"), name="code", class="mb-4 self-center", form_state=form_state) %}
+        <div class="cpd-mfa-container">
+          <input {{ field.attributes(f) }}
+            id="mfa-code-input"
+            type="text"
+            minlength="0"
+            maxlength="6"
+            class="cpd-mfa-control uppercase"
+            required>
+
+          {% for _ in range(6) %}
+          <div class="cpd-mfa-digit" aria-hidden="true"></div>
+          {% endfor %}
+        </div>
+      {% endcall %}
+
+      {{ button.button(text=_("action.continue")) }}
+    </form>
+
+    {{ button.link_tertiary(text=_("action.cancel"), href="/") }}
+  </section>
+{% endblock content %}

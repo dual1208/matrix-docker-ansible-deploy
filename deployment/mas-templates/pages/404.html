@@ -1,0 +1,20 @@
+{#
+Copyright 2024, 2025 New Vector Ltd.
+Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+<main class="w-96 flex-1 flex flex-col gap-2 justify-center">
+  <h1 class="text-xl font-semibold">{{ _("mas.not_found.heading") }}</h1>
+  <p>{{ _("mas.not_found.description") }}</p>
+  <div>
+    {{ button.link_text(text=_("mas.back_to_homepage"), href="/") }}
+  </div>
+
+</main>
+{% endblock %}

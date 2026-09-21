@@ -1,0 +1,33 @@
+{#
+Copyright 2025, 2026 Element Creations Ltd.
+Copyright 2024, 2025 New Vector Ltd.
+Copyright 2021-2024 The Matrix.org Foundation C.I.C.
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-heading">
+    <div class="header">
+      <h1 class="title">{{ _("common.loading") }}</h1>
+    </div>
+  </header>
+
+  <form method="post" class="flex flex-col"{% if redirect_uri is not none %} action="{{ redirect_uri }}"{% endif %}>
+    {% for key, value in params|items %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}" />
+    {% endfor %}
+
+    <noscript>
+      {# Display a button to submit the form in case JavaScript is disabled #}
+      {{ button.button(text=_("action.continue")) }}
+    </noscript>
+  </form>
+
+  {# Submit the form in JavaScript on the next tick, so that if the browser
+     wants to display the placeholder instead of a blank page, it can #}
+  {{ include_asset('src/entrypoints/form-post.ts') | indent(2) | safe }}
+{% endblock %}

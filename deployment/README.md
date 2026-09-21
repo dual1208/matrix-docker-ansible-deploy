@@ -51,7 +51,7 @@ The real family accounts must never be logged into development phones or used fo
 
 ## Public support pages and hosted UI
 
-Run `just gz-family-public` to publish and verify the static support and privacy pages at `https://8.163.2.191/family/support/` and `https://8.163.2.191/family/privacy/` through the existing TLS/static-files service. Matrix Authentication Service receives `Accept-Language: zh-Hans,zh;q=0.9` from the local Traefik route so its hosted login pages select Simplified Chinese. Element Call web hosting is disabled; public discovery advertises only this server's MAS and self-hosted LiveKit JWT service, with no `call.element.io` URL.
+Run `just gz-family-public` to publish and verify the static support and privacy pages at `https://8.163.2.191/family/support/` and `https://8.163.2.191/family/privacy/` through the existing TLS/static-files service. Run `just gz-mas-branding` to install the pinned Chinese MAS branding override and restart only MAS. Traefik forces `zh-Hans`, while the override also makes the English fallback Chinese, labels the service `家庭聊天`, removes upstream product names and public diagnostics from visible pages, and links the footer to the local privacy notice. Element Call web hosting is disabled; public discovery advertises only this server's MAS and self-hosted LiveKit JWT service, with no `call.element.io` URL.
 
 Synapse usage reporting is disabled and its Sentry DSN is explicitly empty. No analytics, crash-reporting, metrics-export, or external monitoring service is enabled by this deployment.
 

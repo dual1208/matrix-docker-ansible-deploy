@@ -22,6 +22,7 @@ gz-check:
     {{gz_ansible}} -i inventory/hosts deployment/install-tls.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/provision-family-room.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/publish-family-public.yml --syntax-check
+    {{gz_ansible}} -i inventory/hosts deployment/publish-mas-branding.yml --syntax-check
     {{gz_ansible}} -i inventory/hosts deployment/install-push-credentials.yml --syntax-check
     {{gz_python}} -m unittest deployment/test_provision_room.py
     sh -n deployment/matrix-tls-sync.sh
@@ -29,6 +30,7 @@ gz-check:
 # Installs the configured gz stack using the existing private inventory.
 gz-deploy:
     {{gz_ansible}} -i inventory/hosts deployment/bootstrap.yml
+    {{gz_ansible}} -i inventory/hosts deployment/publish-mas-branding.yml
     {{gz_ansible}} -i inventory/hosts setup.yml --tags=setup-all
     {{gz_ansible}} -i inventory/hosts deployment/install-tls.yml
     {{gz_ansible}} -i inventory/hosts setup.yml --tags=start,ensure-matrix-users-created
@@ -43,6 +45,11 @@ gz-family-room:
 
 gz-family-public:
     {{gz_ansible}} -i inventory/hosts deployment/publish-family-public.yml
+
+# Installs the Chinese MAS branding override and restarts only MAS.
+gz-mas-branding:
+    {{gz_ansible}} -i inventory/hosts deployment/publish-mas-branding.yml
+    {{gz_ansible}} -i inventory/hosts setup.yml --tags=install-matrix-authentication-service,start-group --extra-vars=group=matrix-authentication-service
 
 # Installs a dormant local push gateway after owner credentials are present.
 gz-push-prepare:

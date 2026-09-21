@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2026 dual1208
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+- name: Publish the family authentication service branding
+  hosts: matrix_servers
+  become: true
+  gather_facts: false
+  vars:
+    gz_mas_templates_path: /matrix/matrix-authentication-service/config/templates
+    gz_mas_translations_path: /matrix/matrix-authentication-service/config/translations
+  tasks:
+    - name: Create the Matrix Authentication Service templates directory
+      ansible.builtin.file:
+        path: "{{ gz_mas_templates_path }}"
+        state: directory
+        owner: matrix
+        group: matrix
+        mode: "0750"
+
+    - name: Publish authentication service templates
+      ansible.builtin.copy:
+        src: mas-templates/
+        dest: "{{ gz_mas_templates_path }}/"
+        owner: matrix
+        group: matrix
+        mode: "0644"
+
+    - name: Create the Matrix Authentication Service translations directory
+      ansible.builtin.file:
+        path: "{{ gz_mas_translations_path }}"
+        state: directory
+        owner: matrix
+        group: matrix
+        mode: "0750"
+
+    - name: Publish Chinese authentication service translations
+      ansible.builtin.copy:
+        src: "mas-translations/{{ item }}.json"
+        dest: "{{ gz_mas_translations_path }}/{{ item }}.json"
+        owner: matrix
+        group: matrix
+        mode: "0644"
+      loop:
+        - en
+        - zh-Hans

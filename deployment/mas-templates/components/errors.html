@@ -1,0 +1,23 @@
+{#
+Copyright 2024, 2025 New Vector Ltd.
+Copyright 2022-2024 The Matrix.org Foundation C.I.C.
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+-#}
+
+{% macro form_error_message(error) -%}
+  {% if error.kind == "invalid_credentials" %}
+    {{ _("mas.errors.invalid_credentials") }}
+  {% elif error.kind == "password_mismatch" %}
+    {{ _("mas.errors.password_mismatch") }}
+  {% elif error.kind == "rate_limit_exceeded" %}
+    {{ _("mas.errors.rate_limit_exceeded") }}
+  {% elif error.kind == "policy" %}
+    {{ _("mas.errors.denied_policy", policy=error.message) }}
+  {% elif error.kind == "captcha" %}
+    {{ _("mas.errors.captcha") }}
+  {% else %}
+    {{ error.kind }}
+  {% endif %}
+{%- endmacro %}

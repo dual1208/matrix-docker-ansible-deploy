@@ -1,0 +1,37 @@
+{#
+Copyright 2024, 2025 New Vector Ltd.
+Copyright 2021-2024 The Matrix.org Foundation C.I.C.
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+-#}
+
+{% macro link(text, uri, mode, params, type="button", kind="primary", destructive=False) %}
+  {% if type == "button" %}
+    {% if destructive %}
+      {% set class = "cpd-button destructive" %}
+    {% else %}
+      {% set class = "cpd-button" %}
+    {% endif %}
+  {% elif type == "link" %}
+    {% set class = "cpd-link" %}
+    {% if destructive %}
+      {% set kind = "critical" %}
+    {% endif %}
+  {% else %}
+      {{ throw(message="Invalid type") }}
+  {% endif %}
+
+  {% if mode == "form_post" %}
+    <form method="post" action="{{ uri }}">
+      {% for key, value in params|items %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}" />
+      {% endfor %}
+      <button class="{{ class }}" data-kind="{{ kind }}" data-size="lg" type="submit">{{ text }}</button>
+    </form>
+  {% elif mode == "fragment" or mode == "query" %}
+    <a class="{{ class }}" data-kind="{{ kind }}" data-size="lg" href="{{ add_params_to_url(uri, mode, params) }}">{{ text }}</a>
+  {% else %}
+    {{ throw(message="Invalid mode") }}
+  {% endif %}
+{% endmacro %}

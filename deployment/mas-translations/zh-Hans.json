@@ -1,0 +1,282 @@
+{
+  "action": {
+    "back": "返回",
+    "cancel": "取消",
+    "continue": "继续",
+    "create_account": "创建账户",
+    "sign_in": "登录",
+    "sign_out": "注销",
+    "skip": "跳过",
+    "start_over": "重新开始"
+  },
+  "app": {
+    "human_name": "家庭聊天",
+    "name": "家庭聊天",
+    "technical_description": "家庭聊天安全登录服务。"
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "服务隐私政策链接",
+      "link": "隐私政策"
+    },
+    "terms_and_conditions": {
+      "alt": "服务条款和条件链接",
+      "link": "条款与条件"
+    }
+  },
+  "common": {
+    "display_name": "显示名称",
+    "email_address": "邮箱地址",
+    "loading": "加载中...",
+    "mxid": "Matrix ID",
+    "password": "密码",
+    "password_confirm": "确认密码",
+    "username": "用户名"
+  },
+  "error": {
+    "unexpected": "意外错误"
+  },
+  "mas": {
+    "account": {
+      "deactivated": {
+        "description": "此账户（<em>%(mxid)s</em>）已被删除。如果这并非预期，请联系服务器管理员。",
+        "heading": "账户已删除"
+      },
+      "locked": {
+        "description": "此账户（<em>%(mxid)s</em>）已被锁定。如果这并非预期，请联系服务器管理员。",
+        "heading": "账户已锁定"
+      },
+      "logged_out": {
+        "description": "此会话已被终止。注销以重新登录",
+        "heading": "会话已终止"
+      }
+    },
+    "back_to_homepage": "返回主页",
+    "captcha": {
+      "noscript": "此表格受验证码保护，需要启用 JavaScript 才能提交。请在浏览器中启用 JavaScript 并重新加载此页面。"
+    },
+    "change_password": {
+      "change": "更改密码",
+      "confirm": "确认密码",
+      "current": "当前密码",
+      "heading": "更改我的密码",
+      "new": "新密码"
+    },
+    "choose_display_name": {
+      "description": "这是能被其他人看到的名称，你可以随时更改。",
+      "headline": "选择显示名称"
+    },
+    "consent": {
+      "continue_to": "继续前往 <span>%(client_name)s</span>？",
+      "scope_list_preface": "一旦继续你将允许 <span>%(client_name)s</span>：",
+      "this_will_setup": "这将使用你位于 <span>%(server_name)s</span> 上的账户设置 %(client_name)s（<span>%(client_uri)s</span>）。",
+      "use_another_account": "使用另一账户"
+    },
+    "device_card": {
+      "access_requested": "已请求访问权限",
+      "generic_device": "设备",
+      "ip_address": "IP 地址",
+      "security_code": "安全代码"
+    },
+    "device_code_link": {
+      "description": "输入你另一设备上显示的安全代码",
+      "headline": "关联新设备到账户",
+      "verification_code": "验证码"
+    },
+    "device_consent": {
+      "confirm_device": "是，已确认这是我的设备并且想登录。",
+      "denied": {
+        "description": "你已拒绝 %(client_name)s 的访问。你可以关闭此窗口。",
+        "heading": "访问被拒绝"
+      },
+      "description": "<strong>另一设备</strong>想要关联你位于 <span>%(server_name)s</span> 上的账户： %(client_name)s，请确保你认识该设备。",
+      "grant_access": "授予访问权",
+      "granted": {
+        "description": "你已授予 %(client_name)s 访问权限。可以关闭此窗口。",
+        "heading": "已授予访问权限"
+      },
+      "title": "允许其访问你的账户？",
+      "warning": {
+        "description": "是否确定这是你的设备？管理员或 IT 支持人员绝不会要求你同意。",
+        "title": "你即将向远端设备授予账户的访问权"
+      }
+    },
+    "device_display_name": {
+      "client_on_device": "运行在 %(device_name)s 的 %(client_name)s",
+      "name_for_platform": "%(name)s %(platform)s",
+      "unknown_device": "未知设备"
+    },
+    "email_in_use": {
+      "description": "如果你忘记了账户凭证，你可以恢复账户。你也可以使用另一邮件地址重新开始。",
+      "title": "此邮件地址 <span>%(email)s</span> 已被使用"
+    },
+    "emails": {
+      "greeting": "%(username)s 你好，",
+      "recovery": {
+        "click_button": "点击下面的按钮创建新密码：",
+        "copy_link": "复制以下链接并粘贴到浏览器中以创建新密码：",
+        "create_new_password": "创建新密码",
+        "fallback": "此按钮对你无效？",
+        "headline": "你已请求重置位于 %(server_name)s 上的账户密码。",
+        "subject": "重置账户密码 (%(mxid)s)",
+        "you_can_ignore": "如果你没有请求过重置密码可以忽略此邮件。当前密码仍然有效。"
+      },
+      "verify": {
+        "body_html": "确认此电子邮件地址的验证码是： <strong>%(code)s</strong>",
+        "body_text": "确认此电子邮件地址的验证码是： %(code)s",
+        "subject": "你的邮箱验证码为：%(code)s"
+      }
+    },
+    "errors": {
+      "captcha": "验证码验证失败，请重试",
+      "denied_policy": "被该策略拒绝：%(policy)s",
+      "email_banned": "由于服务器策略，邮件已被禁止",
+      "email_domain_banned": "由于服务器策略，邮件所属的域已被禁止",
+      "email_domain_not_allowed": "由于服务器策略，邮件域不被允许",
+      "email_not_allowed": "由于服务器策略，邮件不被允许",
+      "field_required": "此字段为必填项",
+      "invalid_credentials": "无效的凭据",
+      "password_mismatch": "密码字段不匹配",
+      "rate_limit_exceeded": "你在短时间内发出了过多请求。请于几分钟后重试。",
+      "username_all_numeric": "用户名不能仅由数字组成",
+      "username_banned": "由于服务器策略，用户名已被禁止",
+      "username_invalid_chars": "用户名包含无效字符。仅能使用小写字母、数字、短横线或下划线。",
+      "username_not_allowed": "由于服务器策略，用户名不被允许",
+      "username_taken": "此用户名已被使用",
+      "username_too_long": "用户名太长",
+      "username_too_short": "用户名太短"
+    },
+    "legacy_consent": {
+      "this_will_setup": "这将使用你位于 <span>%(server_name)s</span> 上的账户设置 <span>%(client_name)s</span>。"
+    },
+    "login": {
+      "call_to_register": "还没有账户？",
+      "continue_with_provider": "以 %(provider)s 继续",
+      "description": "请登录以继续：",
+      "forgot_password": "忘记密码？",
+      "headline": "登录",
+      "link": {
+        "description": "正在关联你位于 <span class=\"break-keep text-links\">%(provider)s</span> 上的账户",
+        "headline": "登录以链接"
+      },
+      "no_login_methods": "没有可用的登录途径。",
+      "username_or_email": "用户名或邮件地址"
+    },
+    "navbar": {
+      "my_account": "我的账户",
+      "register": "创建账户",
+      "signed_in_as": "登录为 <span class=\"font-semibold\">%(username)s</span>。"
+    },
+    "not_found": {
+      "description": "你要查找的页面不存在或已被移动",
+      "heading": "页面未找到"
+    },
+    "not_you": "不是 %(username)s？",
+    "or_separator": "或",
+    "policy_violation": {
+      "description": "这可能是由于创建请求的客户端、当前登录的用户或请求本身造成的。",
+      "heading": "授权请求被该服务执行的策略拒绝",
+      "logged_as": "登录为 <span class=\"font-semibold\">%(username)s</span>",
+      "too_many_sessions": {
+        "description": "你的账户已登录到设备的数量上限。若要继续，<span class=\"font-semibold\">请从现有设备中移除 %(num_devices_to_remove)s 个</span>，然后重新登录。",
+        "heading": "设备数量已达上限",
+        "manage_devices": "管理设备"
+      }
+    },
+    "recovery": {
+      "consumed": {
+        "description": "要创建新密码，请重新开始并选择 \"忘记密码\"。",
+        "heading": "重置密码的链接已被使用"
+      },
+      "disabled": {
+        "description": "如果你丢失了凭据，请联系管理员以恢复账户。",
+        "heading": "账户恢复已禁用"
+      },
+      "expired": {
+        "description": "请求发送一封新电子邮件，该电子邮件将发送至：<span>%(email)s</span>.",
+        "heading": "重置密码的链接已过期",
+        "resend_email": "重新发送电子邮件"
+      },
+      "finish": {
+        "confirm": "再次输入新密码",
+        "description": "为账户指定一个新密码。",
+        "heading": "重置密码",
+        "new": "新密码",
+        "save_and_continue": "保存并继续"
+      },
+      "progress": {
+        "change_email": "尝试不同的电子邮件地址",
+        "description": "如果有账户使用 <span>%(email)s</span> ，我们会发送一封带有重置密码链接的电子邮件。",
+        "heading": "检查你的电子邮箱",
+        "resend_email": "重新发送电子邮件"
+      },
+      "start": {
+        "description": "系统将发送一封电子邮件，内含重置密码的链接。",
+        "heading": "输入你的电子邮箱地址以继续"
+      }
+    },
+    "register": {
+      "call_to_login": "已有账户？",
+      "continue_with_email": "使用邮件地址继续",
+      "continue_with_password": "使用密码继续",
+      "create_account": {
+        "description": "选择一个用户名以继续。",
+        "heading": "创建账户"
+      },
+      "terms_of_service": "我同意<a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">条款与条件 </a>"
+    },
+    "registration_token": {
+      "description": "输入由服务器管理员提供的注册 Token。",
+      "field": "注册 Token",
+      "headline": "注册 Token"
+    },
+    "scope": {
+      "edit_profile": "编辑个人资料和联系方式",
+      "manage_sessions": "管理设备和会话",
+      "mas_admin": "管理 matrix-authentication-service 上的用户",
+      "send_messages": "以你的名义发送新消息",
+      "synapse_admin": "管理 Synapse 服务器",
+      "view_messages": "查看现有信息和数据",
+      "view_profile": "查看个人资料信息和联系方式"
+    },
+    "upstream_oauth2": {
+      "link_mismatch": {
+        "heading": "此上游账户已与另一个账户关联。"
+      },
+      "register": {
+        "choose_username": {
+          "description": "以后无法更改。",
+          "heading": "选择用户名"
+        },
+        "create_account": "创建新账户",
+        "enforced_by_policy": "由服务器策略强制执行",
+        "forced_display_name": "将使用以下显示名称",
+        "forced_email": "将使用以下电子邮件地址",
+        "forced_localpart": "将使用以下用户名",
+        "import_data": {
+          "description": "确认将链接到新%(server_name)s 账户的信息。",
+          "heading": "导入数据"
+        },
+        "imported_from_upstream": "从上游账户导入",
+        "imported_from_upstream_with_name": "已从你的 %(human_name)s 账户导入",
+        "link_existing": "链接到现有账户",
+        "provider_name": "%(human_name)s 账户",
+        "signup_with_upstream": {
+          "heading": "使用 %(human_name)s 账户继续注册"
+        },
+        "suggested_display_name": "导入显示名称",
+        "suggested_email": "导入电子邮件地址",
+        "use": "使用"
+      },
+      "suggest_link": {
+        "action": "链接",
+        "heading": "链接到现有账户"
+      }
+    },
+    "verify_email": {
+      "6_digit_code": "6位数代码",
+      "description": "输入发送至以下邮箱的6位数代码：<em>%(email)s</em>",
+      "headline": "验证邮件地址"
+    }
+  }
+}
